@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Agendamento Odonto Inspeção 2026 - CBAX</title>
+<title>Agendamento Odontológico 2026 - CBA X</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -10,13 +10,14 @@
 
 <style>
 body { font-family: Arial; background:#f2f4f8; margin:0; }
-header { background:#0a2c6d; color:white; text-align:center; padding:25px; }
-.container { background:white; max-width:900px; margin:30px auto; padding:25px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+header { background:#0a2c6d; color:white; text-align:center; padding:20px; }
+header img { width:120px; }
+.container { background:white; max-width:800px; margin:30px auto; padding:25px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
 label { font-weight:bold; margin-top:15px; display:block; }
 input, select { width:100%; padding:8px; margin-top:5px; }
-button { margin-top:25px; padding:12px; background:#c00000; color:white; border:none; width:100%; font-size:16px; cursor:pointer; }
+button { margin-top:20px; padding:12px; background:#c00000; color:white; border:none; width:100%; font-size:16px; cursor:pointer; }
 button:hover { background:#900000; }
-.confirmacao { background:#e6ffe6; padding:20px; margin-top:20px; border-radius:8px; display:none; }
+.confirmacao { display:none; background:#e6ffe6; padding:20px; margin-top:20px; border-radius:8px; }
 </style>
 </head>
 
@@ -25,19 +26,28 @@ button:hover { background:#900000; }
 <header>
 <img src="logo.png">
 <h1>Agendamento Odontológico 2026</h1>
-<p>CBA X - Salvamento Marítimo</p>
+<p>Comando de Bombeiros de Área X</p>
 </header>
 
 <div class="container">
 
-<label>Unidade em que Serve:</label>
+<h2>Dados do Militar</h2>
+
+<label>Unidade que Serve:</label>
 <select id="unidadeServe">
 <option value="">Selecione</option>
+<option>CBA X</option>
 <option>1º GMAR (Botafogo)</option>
 <option>2º GMAR (Barra da Tijuca)</option>
 <option>3º GMAR (Copacabana)</option>
 <option>4º GMAR (Itaipu)</option>
-<option>CER</option>
+<option>DBM 1/M (Paquetá)</option>
+<option>DBM 2/M (Piscinão de Ramos)</option>
+<option>DBM 3/M (Recreio)</option>
+<option>DBM 4/M (Barra de Guaratiba)</option>
+<option>DBM 5/M (Sepetiba)</option>
+<option>DBM 6/M (Itaipu)</option>
+<option>CER (Coordenadoria de Embarcações de Resgate)</option>
 </select>
 
 <label>Posto/Graduação:</label>
@@ -69,25 +79,26 @@ button:hover { background:#900000; }
 <label>Email:</label>
 <input type="email" id="email">
 
-<hr>
+<h2>Agendamento</h2>
 
 <label>Unidade de Atendimento:</label>
-<select id="unidade">
+<select id="unidade" onchange="carregarDatas()">
+<option value="">Selecione</option>
 <option value="1GMAR">1º GMAR - BOTAFOGO</option>
-<option value="2GMAR">2º GMAR - BARRA</option>
+<option value="2GMAR">2º GMAR - BARRA (GBS)</option>
 <option value="3GMAR">3º GMAR - COPACABANA</option>
-<option value="4GMAR">4º GMAR - ITAIPU</option>
+<option value="4GMAR">4º GMAR - ITAIPU (CEPO)</option>
 </select>
 
 <label>Data:</label>
-<input type="text" id="data" placeholder="Ex: 18/03/26">
+<select id="data" onchange="carregarHorarios()"></select>
 
 <label>Horário:</label>
-<input type="text" id="horario" placeholder="Ex: 08:30">
+<select id="horario"></select>
 
 <button onclick="salvar()">Confirmar Agendamento</button>
 
-<div class="confirmacao" id="confirmacaoBox"></div>
+<div id="confirmacaoBox" class="confirmacao"></div>
 
 </div>
 
@@ -107,19 +118,98 @@ appId: "1:545212689993:web:b4b85a03bb2dcac9739998"
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+const datas = {
+"1GMAR":["11/03/26","18/03/26","25/03/26","01/04/26","08/04/26","06/05/26","13/05/26","20/05/26","27/05/26","03/06/26","10/06/26","17/06/26","24/06/26","01/07/26","08/07/26","15/07/26","22/07/26","29/07/26"],
+"2GMAR":["10/03/26","17/03/26","24/03/26","31/03/26","28/04/26","05/05/26","12/05/26","19/05/26","26/05/26","02/06/26","09/06/26","16/06/26","23/06/26","30/06/26","07/07/26","14/07/26","21/07/26","28/07/26"],
+"3GMAR":["10/03/26","17/03/26","24/03/26","31/03/26","07/04/26","14/04/26","28/04/26","05/05/26","12/05/26","19/05/26","26/05/26","02/06/26","09/06/26","16/06/26","23/06/26","30/06/26","07/07/26","14/07/26","21/07/26","28/07/26"],
+"4GMAR":["10/04/26","17/04/26","08/05/26","15/05/26","22/05/26","29/05/26","05/06/26","12/06/26","19/06/26","26/06/26","03/07/26","10/07/26","17/07/26","24/07/26","31/07/26"]
+};
+
+function gerarHorarios(inicio, quantidade){
+let lista=[];
+let hora=new Date("2000-01-01T"+inicio+":00");
+for(let i=0;i<quantidade;i++){
+lista.push(hora.toTimeString().slice(0,5));
+hora.setMinutes(hora.getMinutes()+15);
+}
+return lista;
+}
+
+function carregarDatas(){
+let unidade=document.getElementById("unidade").value;
+let selectData=document.getElementById("data");
+let selectHorario=document.getElementById("horario");
+
+selectData.innerHTML="";
+selectHorario.innerHTML="";
+if(!unidade) return;
+
+datas[unidade].forEach(d=>{
+let op=document.createElement("option");
+op.value=d;
+op.text=d;
+selectData.appendChild(op);
+});
+
+carregarHorarios();
+}
+
+function carregarHorarios(){
+let unidade=document.getElementById("unidade").value;
+let selectHorario=document.getElementById("horario");
+selectHorario.innerHTML="";
+if(!unidade) return;
+
+let horarios=[];
+if(unidade==="1GMAR") horarios=gerarHorarios("08:00",14);
+if(unidade==="2GMAR") horarios=[...gerarHorarios("08:00",14),...gerarHorarios("13:00",7)];
+if(unidade==="3GMAR") horarios=gerarHorarios("08:00",11);
+if(unidade==="4GMAR") horarios=gerarHorarios("08:00",13);
+
+horarios.forEach(h=>{
+let op=document.createElement("option");
+op.value=h;
+op.text=h;
+selectHorario.appendChild(op);
+});
+}
+
 async function salvar(){
 
-let rg = document.getElementById("rg").value.trim();
+let unidade=document.getElementById("unidade").value;
+let data=document.getElementById("data").value;
+let horario=document.getElementById("horario").value;
+let rg=document.getElementById("rg").value.trim();
+
+if(!unidade||!data||!horario){
+alert("Selecione unidade, data e horário.");
+return;
+}
 
 if(!rg){
 alert("Informe o RG.");
 return;
 }
 
-const consulta = await db.collection("agendamentos").where("rg","==",rg).get();
+// 🔒 BLOQUEIO POR RG
+const consultaRG = await db.collection("agendamentos")
+.where("rg","==",rg)
+.get();
+
+if(!consultaRG.empty){
+alert("Já existe agendamento para este RG.");
+return;
+}
+
+// 🔒 BLOQUEIO DE HORÁRIO
+const consulta=await db.collection("agendamentos")
+.where("unidade","==",unidade)
+.where("data","==",data)
+.where("horario","==",horario)
+.get();
 
 if(!consulta.empty){
-alert("Já existe agendamento para este RG.");
+alert("Horário já preenchido!");
 return;
 }
 
@@ -130,9 +220,9 @@ nome:document.getElementById("nome").value,
 rg:rg,
 telefone:document.getElementById("telefone").value,
 email:document.getElementById("email").value,
-unidade:document.getElementById("unidade").value,
-data:document.getElementById("data").value,
-horario:document.getElementById("horario").value,
+unidade,
+data,
+horario,
 criadoEm:new Date()
 };
 
@@ -144,36 +234,35 @@ gerarPDF(dados);
 }
 
 function mostrarConfirmacao(d){
-let box = document.getElementById("confirmacaoBox");
+let box=document.getElementById("confirmacaoBox");
 box.style.display="block";
 box.innerHTML=`
 <h3>Agendamento Confirmado</h3>
 <p><strong>Nome:</strong> ${d.nome}</p>
 <p><strong>RG:</strong> ${d.rg}</p>
-<p><strong>Unidade:</strong> ${d.unidade}</p>
+<p><strong>Unidade Atendimento:</strong> ${d.unidade}</p>
 <p><strong>Data:</strong> ${d.data}</p>
 <p><strong>Horário:</strong> ${d.horario}</p>
 <p><strong>Salve ou imprima esta tela.</strong></p>
 `;
+window.scrollTo(0,document.body.scrollHeight);
 }
 
 function gerarPDF(d){
-
-const doc = new jsPDF();
+const doc=new jsPDF();
 
 doc.setFontSize(14);
-doc.text("CBAX - Salvamento Marítimo", 20, 20);
-doc.text("Confirmação de Agendamento - 2026", 20, 30);
+doc.text("Comando de Bombeiros de Área X",20,20);
+doc.text("Confirmação de Agendamento Odontológico 2026",20,30);
 
 doc.setFontSize(12);
-doc.text("Nome: " + d.nome, 20, 50);
-doc.text("RG: " + d.rg, 20, 60);
-doc.text("Unidade: " + d.unidade, 20, 70);
-doc.text("Data: " + d.data, 20, 80);
-doc.text("Horário: " + d.horario, 20, 90);
+doc.text("Nome: "+d.nome,20,50);
+doc.text("RG: "+d.rg,20,60);
+doc.text("Unidade Atendimento: "+d.unidade,20,70);
+doc.text("Data: "+d.data,20,80);
+doc.text("Horário: "+d.horario,20,90);
 
 doc.save("confirmacao_agendamento_cbax_2026.pdf");
-
 }
 
 </script>
