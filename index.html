@@ -24,13 +24,12 @@ header {
 
 header img {
   width: 120px;
-  display: block;
-  margin: 0 auto 10px;
+  margin-bottom: 10px;
 }
 
 .container {
   background: white;
-  max-width: 700px;
+  max-width: 750px;
   margin: 30px auto;
   padding: 25px;
   border-radius: 8px;
@@ -39,6 +38,7 @@ header img {
 
 h2 {
   color: #0a2c6d;
+  margin-top: 25px;
 }
 
 label {
@@ -54,7 +54,7 @@ input, select {
 }
 
 button {
-  margin-top: 20px;
+  margin-top: 25px;
   padding: 12px;
   background-color: #c00000;
   color: white;
@@ -67,19 +67,13 @@ button {
 button:hover {
   background-color: #900000;
 }
-
-.vagas {
-  margin-top: 10px;
-  font-size: 14px;
-  color: green;
-}
 </style>
 </head>
 
 <body>
 
 <header>
-  <img src="logo.png">
+  <img src="logo.png" alt="Logo CBA X">
   <h1>Agendamento Odontológico 2026</h1>
   <p>Comando de Bombeiros de Área X</p>
 </header>
@@ -89,7 +83,31 @@ button:hover {
 <h2>Dados do Militar</h2>
 
 <label>Unidade que Serve:</label>
-<input type="text" id="unidadeServe">
+<select id="unidadeServe">
+  <option value="">Selecione</option>
+  <option>1º GMAR - BOTAFOGO</option>
+  <option>2º GMAR - BARRA DA TIJUCA</option>
+  <option>3º GMAR - COPACABANA</option>
+  <option>4º GMAR - ITAIPU (CEPO)</option>
+</select>
+
+<label>Posto/Graduação:</label>
+<select id="posto">
+  <option value="">Selecione</option>
+  <option>CEL BM</option>
+  <option>TC BM</option>
+  <option>MAJ BM</option>
+  <option>CAP BM</option>
+  <option>1º TEN BM</option>
+  <option>2º TEN BM</option>
+  <option>ASP BM</option>
+  <option>SUBTEN BM</option>
+  <option>1º SGT BM</option>
+  <option>2º SGT BM</option>
+  <option>3º SGT BM</option>
+  <option>CB BM</option>
+  <option>SD BM</option>
+</select>
 
 <label>Nome Completo:</label>
 <input type="text" id="nome">
@@ -115,18 +133,21 @@ button:hover {
 </select>
 
 <label>Data:</label>
-<select id="data" onchange="carregarHorarios()"></select>
+<select id="data" onchange="carregarHorarios()">
+  <option value="">Selecione a unidade primeiro</option>
+</select>
 
 <label>Horário:</label>
-<select id="horario"></select>
-
-<div class="vagas" id="infoVagas"></div>
+<select id="horario">
+  <option value="">Selecione a data primeiro</option>
+</select>
 
 <button onclick="salvar()">Confirmar Agendamento</button>
 
 </div>
 
 <script>
+
 const firebaseConfig = {
   apiKey: "AIzaSyD3Z8mJPvGrRzwpYLymAXYcRQat2ccUqVM",
   authDomain: "agendamento-odonto-cbax.firebaseapp.com",
@@ -147,21 +168,25 @@ const datas = {
 };
 
 function gerarHorarios(inicio, quantidade){
-  let horarios = [];
-  let hora = inicio;
+  let lista=[];
+  let hora=new Date("01/01/2000 "+inicio);
   for(let i=0;i<quantidade;i++){
-    let h = new Date("01/01/2000 " + hora);
-    horarios.push(h.toTimeString().slice(0,5));
-    h.setMinutes(h.getMinutes()+15);
-    hora = h.toTimeString().slice(0,5);
+    lista.push(hora.toTimeString().slice(0,5));
+    hora.setMinutes(hora.getMinutes()+15);
   }
-  return horarios;
+  return lista;
 }
 
 function carregarDatas(){
-  const unidade = document.getElementById("unidade").value;
-  const selectData = document.getElementById("data");
+  const unidade=document.getElementById("unidade").value;
+  const selectData=document.getElementById("data");
+  const selectHorario=document.getElementById("horario");
+
   selectData.innerHTML="";
+  selectHorario.innerHTML='<option value="">Selecione a data primeiro</option>';
+
+  if(!unidade) return;
+
   datas[unidade].forEach(d=>{
     let op=document.createElement("option");
     op.value=d;
@@ -171,9 +196,12 @@ function carregarDatas(){
 }
 
 function carregarHorarios(){
-  const unidade = document.getElementById("unidade").value;
-  const selectHorario = document.getElementById("horario");
+  const unidade=document.getElementById("unidade").value;
+  const selectHorario=document.getElementById("horario");
   selectHorario.innerHTML="";
+
+  if(!unidade) return;
+
   let horarios=[];
   if(unidade==="1GMAR") horarios=gerarHorarios("08:00",14);
   if(unidade==="2GMAR") horarios=[...gerarHorarios("08:00",14),...gerarHorarios("13:00",7)];
@@ -189,11 +217,16 @@ function carregarHorarios(){
 }
 
 async function salvar(){
-  const unidade = document.getElementById("unidade").value;
-  const data = document.getElementById("data").value;
-  const horario = document.getElementById("horario").value;
+  const unidade=document.getElementById("unidade").value;
+  const data=document.getElementById("data").value;
+  const horario=document.getElementById("horario").value;
 
-  const consulta = await db.collection("agendamentos")
+  if(!unidade || !data || !horario){
+    alert("Preencha unidade, data e horário.");
+    return;
+  }
+
+  const consulta=await db.collection("agendamentos")
     .where("unidade","==",unidade)
     .where("data","==",data)
     .where("horario","==",horario)
@@ -205,11 +238,12 @@ async function salvar(){
   }
 
   await db.collection("agendamentos").add({
-    unidadeServe: unidadeServe.value,
-    nome: nome.value,
-    rg: rg.value,
-    telefone: telefone.value,
-    email: email.value,
+    unidadeServe: document.getElementById("unidadeServe").value,
+    posto: document.getElementById("posto").value,
+    nome: document.getElementById("nome").value,
+    rg: document.getElementById("rg").value,
+    telefone: document.getElementById("telefone").value,
+    email: document.getElementById("email").value,
     unidade: unidade,
     data: data,
     horario: horario,
@@ -217,8 +251,13 @@ async function salvar(){
   });
 
   alert("Agendamento realizado com sucesso!");
+  location.reload();
 }
+
 </script>
+
+</body>
+</html>/script>
 
 </body>
 </html>
