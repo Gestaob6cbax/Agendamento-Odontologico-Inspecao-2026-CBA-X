@@ -1,43 +1,224 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>Agendamento Odonto CBAX</title>
+<meta charset="UTF-8">
+<title>Agendamento Odontológico 2026 - CBA X</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f2f4f8;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background-color: #0a2c6d;
+  color: white;
+  text-align: center;
+  padding: 20px;
+}
+
+header img {
+  width: 120px;
+  display: block;
+  margin: 0 auto 10px;
+}
+
+.container {
+  background: white;
+  max-width: 700px;
+  margin: 30px auto;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+h2 {
+  color: #0a2c6d;
+}
+
+label {
+  font-weight: bold;
+  display: block;
+  margin-top: 15px;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+}
+
+button {
+  margin-top: 20px;
+  padding: 12px;
+  background-color: #c00000;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
+}
+
+button:hover {
+  background-color: #900000;
+}
+
+.vagas {
+  margin-top: 10px;
+  font-size: 14px;
+  color: green;
+}
+</style>
 </head>
+
 <body>
 
-  <h2>Agendamento Odontológico</h2>
+<header>
+  <img src="logo.png">
+  <h1>Agendamento Odontológico 2026</h1>
+  <p>Comando de Bombeiros de Área X</p>
+</header>
 
-  <input type="text" id="nome" placeholder="Nome do Militar">
-  <button onclick="salvar()">Agendar</button>
+<div class="container">
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<h2>Dados do Militar</h2>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyD3Z8mJPvGrRzwpYLymAXYcRQat2ccUqVM",
-      authDomain: "agendamento-odonto-cbax.firebaseapp.com",
-      projectId: "agendamento-odonto-cbax",
-      storageBucket: "agendamento-odonto-cbax.firebasestorage.app",
-      messagingSenderId: "545212689993",
-      appId: "1:545212689993:web:b4b85a03bb2dcac9739998"
-    };
+<label>Unidade que Serve:</label>
+<input type="text" id="unidadeServe">
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+<label>Nome Completo:</label>
+<input type="text" id="nome">
 
-    function salvar() {
-      const nome = document.getElementById("nome").value;
+<label>RG:</label>
+<input type="text" id="rg">
 
-      db.collection("agendamentos").add({
-        nome: nome,
-        data: new Date()
-      });
+<label>Telefone:</label>
+<input type="text" id="telefone">
 
-      alert("Agendamento salvo!");
-    }
-  </script>
+<label>Email:</label>
+<input type="email" id="email">
+
+<h2>Agendamento</h2>
+
+<label>Unidade de Atendimento:</label>
+<select id="unidade" onchange="carregarDatas()">
+  <option value="">Selecione</option>
+  <option value="1GMAR">1º GMAR - BOTAFOGO</option>
+  <option value="2GMAR">2º GMAR - BARRA (GBS)</option>
+  <option value="3GMAR">3º GMAR - COPACABANA</option>
+  <option value="4GMAR">4º GMAR - ITAIPU (CEPO)</option>
+</select>
+
+<label>Data:</label>
+<select id="data" onchange="carregarHorarios()"></select>
+
+<label>Horário:</label>
+<select id="horario"></select>
+
+<div class="vagas" id="infoVagas"></div>
+
+<button onclick="salvar()">Confirmar Agendamento</button>
+
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyD3Z8mJPvGrRzwpYLymAXYcRQat2ccUqVM",
+  authDomain: "agendamento-odonto-cbax.firebaseapp.com",
+  projectId: "agendamento-odonto-cbax",
+  storageBucket: "agendamento-odonto-cbax.firebasestorage.app",
+  messagingSenderId: "545212689993",
+  appId: "1:545212689993:web:b4b85a03bb2dcac9739998"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const datas = {
+  "1GMAR": ["11/03/26","18/03/26","25/03/26","01/04/26","08/04/26","06/05/26","13/05/26","20/05/26","27/05/26","03/06/26","10/06/26","17/06/26","24/06/26","01/07/26","08/07/26","15/07/26","22/07/26","29/07/26"],
+  "2GMAR": ["10/03/26","17/03/26","24/03/26","31/03/26","28/04/26","05/05/26","12/05/26","19/05/26","26/05/26","02/06/26","09/06/26","16/06/26","23/06/26","30/06/26","07/07/26","14/07/26","21/07/26","28/07/26"],
+  "3GMAR": ["10/03/26","17/03/26","24/03/26","31/03/26","07/04/26","14/04/26","28/04/26","05/05/26","12/05/26","19/05/26","26/05/26","02/06/26","09/06/26","16/06/26","23/06/26","30/06/26","07/07/26","14/07/26","21/07/26","28/07/26"],
+  "4GMAR": ["10/04/26","17/04/26","08/05/26","15/05/26","22/05/26","29/05/26","05/06/26","12/06/26","19/06/26","26/06/26","03/07/26","10/07/26","17/07/26","24/07/26","31/07/26"]
+};
+
+function gerarHorarios(inicio, quantidade){
+  let horarios = [];
+  let hora = inicio;
+  for(let i=0;i<quantidade;i++){
+    let h = new Date("01/01/2000 " + hora);
+    horarios.push(h.toTimeString().slice(0,5));
+    h.setMinutes(h.getMinutes()+15);
+    hora = h.toTimeString().slice(0,5);
+  }
+  return horarios;
+}
+
+function carregarDatas(){
+  const unidade = document.getElementById("unidade").value;
+  const selectData = document.getElementById("data");
+  selectData.innerHTML="";
+  datas[unidade].forEach(d=>{
+    let op=document.createElement("option");
+    op.value=d;
+    op.text=d;
+    selectData.appendChild(op);
+  });
+}
+
+function carregarHorarios(){
+  const unidade = document.getElementById("unidade").value;
+  const selectHorario = document.getElementById("horario");
+  selectHorario.innerHTML="";
+  let horarios=[];
+  if(unidade==="1GMAR") horarios=gerarHorarios("08:00",14);
+  if(unidade==="2GMAR") horarios=[...gerarHorarios("08:00",14),...gerarHorarios("13:00",7)];
+  if(unidade==="3GMAR") horarios=gerarHorarios("08:00",11);
+  if(unidade==="4GMAR") horarios=gerarHorarios("08:00",13);
+
+  horarios.forEach(h=>{
+    let op=document.createElement("option");
+    op.value=h;
+    op.text=h;
+    selectHorario.appendChild(op);
+  });
+}
+
+async function salvar(){
+  const unidade = document.getElementById("unidade").value;
+  const data = document.getElementById("data").value;
+  const horario = document.getElementById("horario").value;
+
+  const consulta = await db.collection("agendamentos")
+    .where("unidade","==",unidade)
+    .where("data","==",data)
+    .where("horario","==",horario)
+    .get();
+
+  if(!consulta.empty){
+    alert("Horário já preenchido!");
+    return;
+  }
+
+  await db.collection("agendamentos").add({
+    unidadeServe: unidadeServe.value,
+    nome: nome.value,
+    rg: rg.value,
+    telefone: telefone.value,
+    email: email.value,
+    unidade: unidade,
+    data: data,
+    horario: horario,
+    criadoEm: new Date()
+  });
+
+  alert("Agendamento realizado com sucesso!");
+}
+</script>
 
 </body>
 </html>
