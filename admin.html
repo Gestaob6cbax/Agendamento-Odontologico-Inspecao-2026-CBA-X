@@ -85,14 +85,6 @@ const dataFiltro = document.getElementById("filtroData").value;
 
 let query = db.collection("agendamentos");
 
-if(unidadeFiltro){
-query = query.where("unidade","==",unidadeFiltro);
-}
-
-if(dataFiltro){
-query = query.where("data","==",dataFiltro);
-}
-
 const snapshot = await query.get();
 
 const tbody = document.querySelector("#tabela tbody");
@@ -101,20 +93,29 @@ tbody.innerHTML="";
 snapshot.forEach(doc=>{
 const d = doc.data();
 
+// corrigindo possíveis nomes diferentes
+const unidade = d.unidade || d.unidadeAtendimento || "-";
+const data = d.data ? d.data : (d.criadoEm ? new Date(d.criadoEm.seconds * 1000).toLocaleDateString("pt-BR") : "-");
+const horario = d.horario || "-";
+const nome = d.nome || "-";
+const posto = d.posto || d.postoGraduacao || "-";
+const rg = d.rg || "-";
+const telefone = d.telefone || "-";
+const email = d.email || "-";
+
 tbody.innerHTML += `
 <tr>
-<td>${d.unidade}</td>
-<td>${d.data}</td>
-<td>${d.horario}</td>
-<td>${d.nome}</td>
-<td>${d.posto}</td>
-<td>${d.rg}</td>
-<td>${d.telefone}</td>
-<td>${d.email}</td>
+<td>${unidade}</td>
+<td>${data}</td>
+<td>${horario}</td>
+<td>${nome}</td>
+<td>${posto}</td>
+<td>${rg}</td>
+<td>${telefone}</td>
+<td>${email}</td>
 </tr>
 `;
 });
-
 }
 
 async function exportarExcel(){
