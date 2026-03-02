@@ -11,16 +11,29 @@
 <style>
 body { font-family: Arial; background:#f2f4f8; margin:0; }
 header { background:#0a2c6d; color:white; text-align:center; padding:20px; }
-.container { max-width:1200px; margin:30px auto; background:white; padding:25px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
+.container { max-width:1300px; margin:30px auto; background:white; padding:25px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
 table { width:100%; border-collapse: collapse; margin-top:20px;}
 th, td { border:1px solid #ddd; padding:8px; text-align:center;}
 th { background:#0a2c6d; color:white;}
-button { margin:10px 5px; padding:8px 15px; background:#c00000; color:white; border:none; cursor:pointer;}
+button { margin:5px; padding:8px 15px; background:#c00000; color:white; border:none; cursor:pointer;}
 button:hover { background:#900000;}
+select { padding:5px; margin:5px; }
+.top-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+.counter { font-weight:bold; }
+.login-box { max-width:400px; margin:120px auto; background:white; padding:30px; text-align:center; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
+input[type=password] { padding:8px; width:100%; margin-top:10px; }
 </style>
 </head>
 
 <body>
+
+<div id="login" class="login-box">
+<h2>Acesso Administrativo</h2>
+<input type="password" id="senha" placeholder="Digite a senha">
+<button onclick="verificarSenha()">Entrar</button>
+</div>
+
+<div id="painel" style="display:none;">
 
 <header>
 <h1>Painel Administrativo</h1>
@@ -29,8 +42,39 @@ button:hover { background:#900000;}
 
 <div class="container">
 
-<button onclick="cancelarSelecionados()">Cancelar Selecionados</button>
-<button onclick="exportarSelecionados()">Exportar Selecionados</button>
+<div class="top-bar">
+
+<div>
+<select id="filtroUnidade" onchange="carregarDados()">
+<option value="">Todas as Unidades</option>
+<option>CBA X</option>
+<option>1º GMAR (Botafogo)</option>
+<option>2º GMAR (Barra da Tijuca)</option>
+<option>3º GMAR (Copacabana)</option>
+<option>4º GMAR (Itaipu)</option>
+<option>CER</option>
+</select>
+
+<select id="filtroMes" onchange="carregarDados()">
+<option value="">Todos os Meses</option>
+<option value="/03/26">Março</option>
+<option value="/04/26">Abril</option>
+<option value="/05/26">Maio</option>
+<option value="/06/26">Junho</option>
+<option value="/07/26">Julho</option>
+</select>
+</div>
+
+<div>
+<button onclick="cancelarSelecionados()">Cancelar</button>
+<button onclick="exportarSelecionados()">Exportar</button>
+</div>
+
+<div class="counter">
+Total: <span id="contador">0</span>
+</div>
+
+</div>
 
 <table>
 <thead>
@@ -50,8 +94,22 @@ button:hover { background:#900000;}
 </table>
 
 </div>
+</div>
 
 <script>
+
+const SENHA_ADMIN = "cbax2026"; // <<< ALTERE AQUI SE QUISER
+
+function verificarSenha(){
+const senha = document.getElementById("senha").value;
+if(senha === SENHA_ADMIN){
+document.getElementById("login").style.display="none";
+document.getElementById("painel").style.display="block";
+carregarDados();
+}else{
+alert("Senha incorreta.");
+}
+}
 
 const firebaseConfig = {
 apiKey: "AIzaSyD3Z8mJPvGrRzwpYLymAXYcRQat2ccUqVM",
@@ -69,10 +127,19 @@ async function carregarDados(){
 
 const snapshot = await db.collection("agendamentos").orderBy("criadoEm","desc").get();
 const tabela = document.getElementById("tabela");
+const filtroUnidade = document.getElementById("filtroUnidade").value;
+const filtroMes = document.getElementById("filtroMes").value;
+
 tabela.innerHTML="";
+let total=0;
 
 snapshot.forEach(doc=>{
 const d = doc.data();
+
+if(filtroUnidade && d.unidadeServe !== filtroUnidade) return;
+if(filtroMes && !d.data.includes(filtroMes)) return;
+
+total++;
 
 tabela.innerHTML += `
 <tr>
@@ -89,47 +156,35 @@ tabela.innerHTML += `
 `;
 });
 
+document.getElementById("contador").innerText = total;
+
 }
 
 function toggleTodos(){
 const master = document.getElementById("selecionarTodos");
 const checks = document.querySelectorAll(".checkItem");
-
-checks.forEach(cb=>{
-cb.checked = master.checked;
-});
+checks.forEach(cb=> cb.checked = master.checked);
 }
 
 async function cancelarSelecionados(){
-
 const checkboxes = document.querySelectorAll(".checkItem:checked");
+if(checkboxes.length === 0){ alert("Selecione ao menos um."); return; }
 
-if(checkboxes.length === 0){
-alert("Selecione ao menos um agendamento.");
-return;
-}
-
-if(!confirm("Deseja realmente cancelar os agendamentos selecionados?")) return;
+if(!confirm("Confirmar cancelamento?")) return;
 
 for(const cb of checkboxes){
 await db.collection("agendamentos").doc(cb.value).delete();
 }
 
-alert("Agendamento(s) cancelado(s) com sucesso.");
 carregarDados();
+alert("Cancelado com sucesso.");
 }
 
 async function exportarSelecionados(){
-
 const checkboxes = document.querySelectorAll(".checkItem:checked");
+if(checkboxes.length === 0){ alert("Selecione ao menos um."); return; }
 
-if(checkboxes.length === 0){
-alert("Selecione ao menos um agendamento para exportar.");
-return;
-}
-
-let dados = [];
-
+let dados=[];
 for(const cb of checkboxes){
 const doc = await db.collection("agendamentos").doc(cb.value).get();
 dados.push(doc.data());
@@ -138,12 +193,8 @@ dados.push(doc.data());
 const worksheet = XLSX.utils.json_to_sheet(dados);
 const workbook = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(workbook, worksheet, "Agendamentos");
-
-XLSX.writeFile(workbook, "agendamentos_selecionados.xlsx");
-
+XLSX.writeFile(workbook, "agendamentos_cbax_2026.xlsx");
 }
-
-carregarDados();
 
 </script>
 
