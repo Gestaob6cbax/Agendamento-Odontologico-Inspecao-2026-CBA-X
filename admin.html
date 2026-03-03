@@ -11,7 +11,7 @@
 <style>
     body { font-family: Arial, sans-serif; background:#f2f4f8; margin:0; }
     header { background:#0a2c6d; color:white; text-align:center; padding:20px; }
-    .container { max-width:1350px; margin:30px auto; background:white; padding:25px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
+    .container { max-width:1450px; margin:30px auto; background:white; padding:25px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
     
     .login-box { max-width:400px; margin:120px auto; background:white; padding:30px; text-align:center; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
     .password-container { position: relative; width: 100%; margin-top: 15px; }
@@ -20,7 +20,7 @@
 
     .top-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom: 20px; }
     table { width:100%; border-collapse: collapse; }
-    th, td { border:1px solid #ddd; padding:10px; text-align:center; font-size: 13px;}
+    th, td { border:1px solid #ddd; padding:10px; text-align:center; font-size: 12px;}
     th { background:#0a2c6d; color:white; text-transform: uppercase; }
     tr:nth-child(even) { background-color: #f9f9f9; }
     
@@ -28,10 +28,10 @@
     .btn-login { background:#0a2c6d; color:white; width: 100%; margin-top: 15px; }
     .btn-cancel { background:#c00000; color:white; }
     .btn-export { background:#28a745; color:white; }
-    button:hover { opacity: 0.8; }
-
+    
     .counter { font-size: 1.1rem; font-weight:bold; color: #0a2c6d; }
-    .badge-local { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-weight: bold; border: 1px solid #ffeeba; display: inline-block; }
+    .badge-local { background: #fff3cd; color: #856404; padding: 4px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #ffeeba; }
+    .badge-origem { background: #e2e3e5; color: #383d41; padding: 4px 6px; border-radius: 4px; font-weight: normal; border: 1px solid #d6d8db; }
     select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin: 0 5px; }
 </style>
 </head>
@@ -39,6 +39,7 @@
 <body>
 
 <div id="login" class="login-box">
+    <img src="logo.png" style="width: 100px; margin-bottom: 15px;" alt="Logo CBAX" onerror="this.style.display='none'; console.log('Logo não encontrado');">
     <h2>Acesso Administrativo</h2>
     <div class="password-container">
         <input type="password" id="senha" placeholder="Digite a senha" onkeypress="if(event.key === 'Enter') verificarSenha()">
@@ -51,27 +52,21 @@
 
 <div id="painel" style="display:none;">
     <header>
-        <h1>Painel Administrativo</h1>
-        <p>Agendamento Odonto Inspeção 2026 - CBAX</p>
+        <img src="logo.png" style="width: 60px; vertical-align: middle; margin-right: 15px;" onerror="this.style.display='none';">
+        <h1 style="display:inline-block; vertical-align: middle;">Painel Administrativo CBAX</h1>
+        <p>Agendamento Odonto Inspeção 2026</p>
     </header>
 
     <div class="container">
         <div class="top-bar">
             <div>
-                <label><strong>Filtrar Local:</strong></label>
+                <label><strong>Filtrar por Local de Inspeção:</strong></label>
                 <select id="filtroUnidadeAgendada" onchange="carregarDados()">
                     <option value="">Todos os Locais</option>
                     <option value="1GMAR">1º GMAR - BOTAFOGO</option>
                     <option value="2GMAR">2º GMAR - BARRA (GBS)</option>
                     <option value="3GMAR">3º GMAR - COPACABANA</option>
                     <option value="4GMAR">4º GMAR - ITAIPU (CEPO)</option>
-                </select>
-
-                <select id="filtroMes" onchange="carregarDados()">
-                    <option value="">Todos os Meses</option>
-                    <option value="/03/26">Março</option>
-                    <option value="/04/26">Abril</option>
-                    <option value="/05/26">Maio</option>
                 </select>
             </div>
 
@@ -87,8 +82,8 @@
             <thead>
                 <tr>
                     <th><input type="checkbox" id="selecionarTodos" onclick="toggleTodos()"></th>
-                    <th>Local Agendado</th>
-                    <th>Data</th>
+                    <th>Local Inspeção</th>
+                    <th>Unidade Origem</th> <th>Data</th>
                     <th>Horário</th>
                     <th>Nome</th>
                     <th>Posto</th>
@@ -109,23 +104,18 @@ function toggleSenha() {
     const inputSenha = document.getElementById("senha");
     const eyeIcon = document.getElementById("eye-icon");
     if (inputSenha.type === "password") {
-        inputSenha.type = "text";
-        eyeIcon.innerText = "🙈";
+        inputSenha.type = "text"; eyeIcon.innerText = "🙈";
     } else {
-        inputSenha.type = "password";
-        eyeIcon.innerText = "👁️";
+        inputSenha.type = "password"; eyeIcon.innerText = "👁️";
     }
 }
 
 function verificarSenha(){
-    const senhaDigitada = document.getElementById("senha").value;
-    if(senhaDigitada === SENHA_ADMIN){
+    if(document.getElementById("senha").value === SENHA_ADMIN){
         document.getElementById("login").style.display="none";
         document.getElementById("painel").style.display="block";
         carregarDados();
-    } else { 
-        alert("Senha incorreta."); 
-    }
+    } else { alert("Senha incorreta."); }
 }
 
 const firebaseConfig = {
@@ -143,9 +133,8 @@ const db = firebase.firestore();
 async function carregarDados(){
     const tabela = document.getElementById("tabela");
     const filtroLocal = document.getElementById("filtroUnidadeAgendada").value;
-    const filtroMes = document.getElementById("filtroMes").value;
     
-    tabela.innerHTML = "<tr><td colspan='9'>Buscando dados no banco...</td></tr>";
+    tabela.innerHTML = "<tr><td colspan='10'>Buscando dados...</td></tr>";
 
     try {
         const snapshot = await db.collection("agendamentos").get();
@@ -154,18 +143,18 @@ async function carregarDados(){
 
         snapshot.forEach(doc => {
             const d = doc.data();
-            const localEfetivo = d.unidade || d.unidadeServe || "Não informado";
-            const dataEfetiva = d.data || "";
+            const localInspecao = d.unidade || "Não informado";
+            const unidadeOrigem = d.unidadeServe || "CBA X"; // Unidade onde ele trabalha
 
-            if(filtroLocal && !localEfetivo.includes(filtroLocal)) return;
-            if(filtroMes && !dataEfetiva.includes(filtroMes)) return;
+            if(filtroLocal && !localInspecao.includes(filtroLocal)) return;
 
             total++;
             tabela.innerHTML += `
                 <tr>
                     <td><input type="checkbox" class="checkItem" value="${doc.id}"></td>
-                    <td><span class="badge-local">${localEfetivo}</span></td>
-                    <td>${dataEfetiva}</td>
+                    <td><span class="badge-local">${localInspecao}</span></td>
+                    <td><span class="badge-origem">${unidadeOrigem}</span></td>
+                    <td>${d.data || ""}</td>
                     <td>${d.horario || ""}</td>
                     <td>${d.nome || ""}</td>
                     <td>${d.posto || ""}</td>
@@ -177,10 +166,7 @@ async function carregarDados(){
         });
 
         document.getElementById("contador").innerText = total;
-        if(total === 0) tabela.innerHTML = "<tr><td colspan='9'>Nenhum agendamento encontrado.</td></tr>";
-    } catch (e) { 
-        tabela.innerHTML = "<tr><td colspan='9'>Erro ao carregar dados.</td></tr>"; 
-    }
+    } catch (e) { tabela.innerHTML = "<tr><td colspan='10'>Erro ao carregar.</td></tr>"; }
 }
 
 function toggleTodos(){
@@ -190,38 +176,36 @@ function toggleTodos(){
 
 async function cancelarSelecionados(){
     const checks = document.querySelectorAll(".checkItem:checked");
-    if(checks.length === 0) return alert("Selecione ao menos um.");
+    if(checks.length === 0) return alert("Selecione algo.");
     if(confirm("Deseja excluir os itens selecionados?")){
-        for(let cb of checks) {
-            await db.collection("agendamentos").doc(cb.value).delete();
-        }
-        alert("Excluído com sucesso.");
+        for(let cb of checks) await db.collection("agendamentos").doc(cb.value).delete();
         carregarDados();
     }
 }
 
 function exportarSelecionados(){
     const checks = document.querySelectorAll(".checkItem:checked");
-    if(checks.length === 0) return alert("Selecione os itens para exportar.");
+    if(checks.length === 0) return alert("Selecione para exportar.");
     
     const dados = Array.from(checks).map(cb => {
         const r = cb.closest('tr').cells;
         return {
-            "Local": r[1].innerText,
-            "Data": r[2].innerText,
-            "Horário": r[3].innerText,
-            "Nome": r[4].innerText,
-            "Posto": r[5].innerText,
-            "RG": r[6].innerText,
-            "Telefone": r[7].innerText,
-            "Email": r[8].innerText
+            "Local Inspeção": r[1].innerText,
+            "Unidade Origem": r[2].innerText,
+            "Data": r[3].innerText,
+            "Horário": r[4].innerText,
+            "Nome": r[5].innerText,
+            "Posto": r[6].innerText,
+            "RG": r[7].innerText,
+            "Telefone": r[8].innerText,
+            "Email": r[9].innerText
         };
     });
 
     const ws = XLSX.utils.json_to_sheet(dados);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Agendamentos");
-    XLSX.writeFile(wb, "Relatorio_CBAX_2026.xlsx");
+    XLSX.writeFile(wb, "Relatorio_CBAX.xlsx");
 }
 </script>
 </body>
