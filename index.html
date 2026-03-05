@@ -29,7 +29,7 @@
         .success-box { display: none; text-align: center; padding: 20px; }
         .footer-logo { font-size: 0.7rem; color: #999; margin-top: 25px; text-align: center; font-weight: 600; }
         hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
-        .loading-spinner { color: var(--odonto-blue); font-size: 0.8rem; font-weight: bold; }
+        .loading-spinner { color: var(--odonto-blue); font-size: 0.8rem; font-weight: bold; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -56,18 +56,28 @@
     <label>RG Militar:</label>
     <input type="number" id="rg" placeholder="Somente números">
 
-    <label>Sua Unidade Atual:</label>
+    <label>Unidade de Origem (Onde você serve):</label>
     <select id="unidadeServe">
         <option value="">Onde você serve?</option>
-        <option>CBA X</option><option>1º GMAR</option><option>2º GMAR</option>
-        <option>3º GMAR</option><option>4º GMAR</option><option>OUTRO</option>
+        <option>CBA X</option>
+        <option>1º GMAR - BOTAFOGO</option>
+        <option>2º GMAR - BARRA</option>
+        <option>3º GMAR - COPACABANA</option>
+        <option>4º GMAR - ITAIPU</option>
+        <option>DBM 1/M - RECREIO</option>
+        <option>DBM 2/M - PISAN</option>
+        <option>DBM 3/M - PAQUETÁ</option>
+        <option>DBM 4/M - ILHA GRANDE</option>
+        <option>DBM 5/M - SEPETIBA</option>
+        <option>DBM 6/M - GUARATIBA</option>
+        <option>OUTRA UNIDADE</option>
     </select>
 
     <hr>
 
     <label>Local da Inspeção (Destino):</label>
     <select id="unidade" onchange="configurarAgenda()">
-        <option value="">Escolha o local...</option>
+        <option value="">Escolha o local da inspeção...</option>
         <option value="1GMAR">1º GMAR - BOTAFOGO</option>
         <option value="2GMAR">2º GMAR - BARRA (GBS)</option>
         <option value="3GMAR">3º GMAR - COPACABANA</option>
@@ -77,7 +87,7 @@
     <label>Data Escolhida:</label>
     <input type="date" id="data" onchange="validarDataESlots()" disabled>
 
-    <label>Horários Disponíveis:</label>
+    <label>Horários Disponíveis (1 vaga por horário):</label>
     <select id="horario" disabled>
         <option value="">Selecione o local e data...</option>
     </select>
@@ -142,12 +152,12 @@ async function validarDataESlots() {
     const status = document.getElementById("statusVagas");
 
     if (!agendaConfig[local].datas.includes(dataSel)) {
-        alert("⚠️ Data fora da escala desta unidade!");
+        alert("⚠️ ATENÇÃO: Não haverá inspeção odontológica nesta unidade no dia selecionado.");
         document.getElementById("data").value = "";
         return;
     }
 
-    status.innerText = "🔍 Consultando vagas reais...";
+    status.innerText = "🔍 Verificando disponibilidade de horários...";
     campoHora.disabled = true;
 
     try {
@@ -164,8 +174,10 @@ async function validarDataESlots() {
         campoHora.innerHTML = '<option value="">Escolha o horário...</option>';
         if (disponiveis.length === 0) {
             status.innerText = "❌ Vagas esgotadas para este dia.";
+            status.style.color = "red";
         } else {
-            status.innerText = `✅ ${disponiveis.length} horários livres.`;
+            status.innerText = `✅ ${disponiveis.length} horários livres para este dia.`;
+            status.style.color = "var(--success-green)";
             campoHora.disabled = false;
             disponiveis.forEach(h => campoHora.innerHTML += `<option value="${h}">${h}</option>`);
         }
@@ -184,15 +196,15 @@ async function salvar() {
         horario: document.getElementById('horario').value
     };
 
-    if (Object.values(d).some(v => !v)) return alert("Preencha todos os campos!");
+    if (Object.values(d).some(v => !v)) return alert("Por favor, preencha todos os campos!");
 
-    btn.disabled = true; btn.innerText = "Salvando...";
+    btn.disabled = true; btn.innerText = "Processando agendamento...";
 
     try {
         const rgExiste = await db.collection("agendamentos").where("rg", "==", d.rg).get();
         if (!rgExiste.empty) {
             btn.disabled = false; btn.innerText = "Confirmar Agendamento";
-            return alert("🚨 RG já agendado!");
+            return alert("🚨 Erro: Este RG já possui um agendamento realizado!");
         }
 
         const payload = {
@@ -206,10 +218,11 @@ async function salvar() {
         document.getElementById('success-area').style.display = 'block';
         document.getElementById('resumo').innerHTML = `
             <b>Militar:</b> ${payload.posto} ${payload.nome}<br>
-            <b>Local:</b> ${payload.unidade}<br>
-            <b>Data/Hora:</b> ${payload.data} às ${payload.horario}
+            <b>RG:</b> ${payload.rg}<br>
+            <b>Local da Inspeção:</b> ${payload.unidade}<br>
+            <b>Data/Hora:</b> ${payload.data} às ${payload.horario}h
         `;
-    } catch (e) { alert("Erro: " + e.message); btn.disabled = false; }
+    } catch (e) { alert("Erro de conexão: " + e.message); btn.disabled = false; }
 }
 </script>
 </body>
