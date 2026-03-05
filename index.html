@@ -9,42 +9,135 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
     <style>
-        /* Mesma paleta de cores e estilo do seu ADM */
-        :root { --primary-blue: #0a2c6d; --bg-gray: #f0f2f5; }
+        /* Mesma paleta de cores e estilo PREMIUM do seu ADM */
+        :root { 
+            --primary-blue: #0a2c6d; 
+            --gold: #d4af37; /* Toque de ouro para premium */
+            --bg-page: #dbe2ef; /* Azul acinzentado suave para o fundo */
+            --bg-card: #ffffff; /* Fundo do formulário branco puro para contraste */
+            --text-main: #0a2c6d;
+            --text-label: #4a5568; /* Azul escuro suave para labels */
+        }
         
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-gray); margin: 0; padding: 20px; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--bg-page); 
+            margin: 0; padding: 20px; 
+            color: #1a1a1a;
+        }
         
-        .container { max-width: 550px; margin: 30px auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 10px solid var(--primary-blue); }
-        
-        header { text-align: center; margin-bottom: 30px; }
-        header h2 { color: var(--primary-blue); margin: 10px 0 5px; text-transform: uppercase; letter-spacing: 1px; font-size: 20px; }
-        header p { color: #666; font-size: 14px; margin: 0; }
+        .container { 
+            max-width: 580px; 
+            margin: 40px auto; 
+            background: var(--bg-card); 
+            padding: 45px; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(10, 44, 109, 0.15); /* Sombra azulada suave */
+            border-top: 12px solid var(--primary-blue); 
+            position: relative;
+            overflow: hidden;
+        }
 
-        label { display: block; margin-top: 18px; font-size: 13px; color: #444; font-weight: bold; text-transform: uppercase; }
+        /* Detalhe Premium de Ouro */
+        .container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 5px;
+            background: var(--gold);
+        }
         
-        input, select { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; transition: 0.3s; box-sizing: border-box; }
-        
-        input:focus, select:focus { border-color: var(--primary-blue); box-shadow: 0 0 8px rgba(10, 44, 109, 0.1); }
+        header { text-align: center; margin-bottom: 35px; }
+        header img { width: 90px; height: auto; margin-bottom: 12px; }
+        header h2 { color: var(--text-main); margin: 0; text-transform: uppercase; letter-spacing: 1.5px; font-size: 22px; font-weight: 800; }
+        header p { color: #666; font-size: 15px; margin: 5px 0 0; }
 
-        button { width: 100%; padding: 15px; background: var(--primary-blue); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 30px; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        label { 
+            display: block; 
+            margin-top: 20px; 
+            font-size: 13px; 
+            color: var(--text-label); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
         
-        button:hover { background: #082152; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        input, select { 
+            width: 100%; 
+            padding: 14px 18px; 
+            margin-top: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 10px; 
+            font-size: 16px; 
+            outline: none; 
+            transition: 0.3s; 
+            box-sizing: border-box; 
+            background: #f9f9f9; /* Fundo dos campos suave */
+            color: #333;
+        }
+        
+        input:focus, select:focus { 
+            border-color: #7f9fdb; /* Borda azul mais clara ao focar */
+            background: #ffffff; /* Fundo branco ao focar */
+            box-shadow: 0 0 10px rgba(10, 44, 109, 0.1); 
+        }
+
+        button { 
+            width: 100%; 
+            padding: 18px; 
+            background: var(--primary-blue); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: 800; 
+            font-size: 17px; 
+            cursor: pointer; 
+            margin-top: 35px; 
+            transition: 0.4s; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+            box-shadow: 0 5px 15px rgba(10, 44, 109, 0.2);
+        }
+        
+        button:hover { 
+            background: #082152; 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(10, 44, 109, 0.3); 
+        }
 
         .success-area { display: none; text-align: center; padding: 20px; }
-        .success-icon { font-size: 50px; color: #28a745; margin-bottom: 15px; }
+        .success-icon { font-size: 60px; color: #28a745; margin-bottom: 20px; }
         
-        .info-box { background: #f8f9fa; border-left: 4px solid var(--primary-blue); padding: 15px; text-align: left; margin-top: 20px; font-size: 14px; line-height: 1.6; }
+        .info-box { 
+            background: #f8f9fa; 
+            border-left: 5px solid var(--primary-blue); 
+            padding: 20px; 
+            text-align: left; 
+            margin-top: 25px; 
+            font-size: 15px; 
+            line-height: 1.7; 
+            border-radius: 8px;
+            color: #333;
+        }
 
-        .footer { text-align: center; margin-top: 25px; font-size: 11px; color: #999; text-transform: uppercase; }
+        .footer { 
+            text-align: center; 
+            margin-top: 35px; 
+            font-size: 12px; 
+            color: #7f8c8d; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
 <div class="container" id="form-container">
     <header>
-        <img src="logo.png" style="width: 85px;" alt="CBA X" onerror="this.style.display='none';">
+        <img src="logo.png" alt="Logo CBA X" onerror="this.style.display='none';">
         <h2>Agendamento Odontológico</h2>
-        <p>Sistema de Saúde CBA X - 2026</p>
+        <p>Sistema de Saúde CBA X - Inspeção 2026</p>
     </header>
 
     <label>Posto / Graduação</label>
@@ -56,21 +149,21 @@
         <option>CABO</option><option>SOLDADO</option>
     </select>
 
-    <label>Nome Completo</label>
-    <input type="text" id="nome" placeholder="Ex: JOÃO DA SILVA">
+    <label>Nome Completo (Sem abreviações)</label>
+    <input type="text" id="nome" placeholder="Ex: JOÃO DA SILVA FERREIRA">
 
     <label>RG Militar</label>
     <input type="number" id="rg" placeholder="Digite apenas os números">
 
     <label>Unidade de Origem (Onde você serve)</label>
     <select id="unidadeServe">
-        <option value="">Selecione...</option>
-        <option>CBA X</option><option>1º GMAR</option><option>2º GMAR</option><option>3º GMAR</option>
+        <option value="">Selecione sua unidade...</option>
+        <option>CBA X sed</option><option>1º GMAR</option><option>2º GMAR</option><option>3º GMAR</option>
         <option>4º GMAR</option><option>DBM 1/M</option><option>DBM 2/M</option><option>DBM 3/M</option>
         <option>DBM 4/M</option><option>DBM 5/M</option><option>DBM 6/M</option>
     </select>
 
-    <label>Local da Inspeção (Destino)</label>
+    <label>Local do Atendimento (Destino)</label>
     <select id="unidade">
         <option value="">Selecione o local...</option>
         <option value="1GMAR">1º GMAR - BOTAFOGO</option>
@@ -89,18 +182,18 @@
         <option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option>
     </select>
 
-    <button onclick="enviarDados()">Confirmar Agendamento</button>
+    <button onclick="enviarDados()">Confirmar Agendamento Premium</button>
     <div class="footer">CBA X - Comando de Bombeiros de Área</div>
 </div>
 
 <div class="container success-area" id="success-area">
     <div class="success-icon">✅</div>
     <h2>Agendamento Realizado!</h2>
-    <p>Seus dados foram sincronizados com o Painel Administrativo.</p>
+    <p>Seus dados foram sincronizados com o Painel Administrativo do CBA X.</p>
     
     <div class="info-box" id="resumo"></div>
     
-    <button onclick="location.reload()" style="background: #666; margin-top: 20px;">Realizar novo agendamento</button>
+    <button onclick="location.reload()" style="background: #666; margin-top: 25px; box-shadow: none;">Realizar novo agendamento</button>
 </div>
 
 <script>
@@ -126,7 +219,7 @@
 
         // Validação simples
         if(!rg || !nome || !local || !dataVal || !horaVal) {
-            alert("Por favor, preencha todos os campos obrigatórios.");
+            alert("Por favor, preencha todos os campos obrigatórios (Nome, RG, Local, Data e Hora).");
             return;
         }
 
@@ -145,7 +238,7 @@
             // Verifica se o RG já existe para evitar duplicados
             const busca = await db.collection("agendamentos").where("rg", "==", rg).get();
             if(!busca.empty) {
-                alert("Este RG já possui um agendamento cadastrado!");
+                alert("ERRO: Este RG já possui um agendamento cadastrado!");
                 return;
             }
 
