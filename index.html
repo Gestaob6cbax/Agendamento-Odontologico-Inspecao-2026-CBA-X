@@ -43,7 +43,7 @@
         <label>Unidade de Origem (Onde trabalha)</label>
         <select id="unidadeOrigem">
             <option value="">Selecione sua unidade...</option>
-            <option>CBA X (Comando de Área)</option>
+            <option>CBA X - SALVAMENTO MARÍTIMO</option>
             <option>1º GMAR (Botafogo)</option>
             <option>2º GMAR (Barra)</option>
             <option>3º GMAR (Copacabana)</option>
@@ -102,7 +102,7 @@
         <div class="comprovante-header">
             <img src="https://raw.githubusercontent.com/Gestaob6cbax/INSPECAO-ODONTOLOGICA-CBA-X-2026/main/logo.png" style="width:60px"><br>
             <strong>ESTADO DO RIO DE JANEIRO</strong><br>
-            <small>CBA X - COMANDO DE BOMBEIROS DE ÁREA</small><br>
+            <small>CBA X - SALVAMENTO MARÍTIMO</small><br>
             <h3 style="margin:10px 0; color:var(--cba-blue)">COMPROVANTE DE AGENDAMENTO</h3>
         </div>
         <div id="resumo-dados"></div>
@@ -183,7 +183,6 @@ async function salvarAgendamento() {
         document.getElementById('main-header').style.display = 'none';
         document.getElementById('comprovante').style.display = 'block';
         
-        // Mapeamento para exibição amigável no comprovante
         let localTexto = d.unidadeDestino;
         if(d.unidadeDestino === "1GMAR") localTexto = "1º GMAR - BOTAFOGO";
         if(d.unidadeDestino === "2GMAR") localTexto = "2º GMAR - BARRA (GBS ATÉ A INAUGURAÇÃO DA UNIDADE)";
