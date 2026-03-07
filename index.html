@@ -48,7 +48,7 @@
     </header>
 
     <div id="form-content">
-        <div class="section-title">Dados do Militar</div>
+        <div class="section-title">Identificação do Militar</div>
         
         <label>Posto/Graduação</label>
         <select id="posto">
@@ -58,29 +58,23 @@
             <option>CAP BM</option><option>MAJ BM</option><option>TEN CEL BM</option><option>CEL BM</option>
         </select>
 
-        <label>Unidade de Origem (Onde serve)</label>
-        <select id="unidadeServe">
-            <option value="">Onde você está lotado?</option>
-            <option>CBA X</option><option>1º GMAR</option><option>2º GMAR</option><option>3º GMAR</option><option>4º GMAR</option><option>DBM 1/M (PAQUETÁ)</option><option>DBM 2/M (PISAN)</option><option>DBM 3/M (RECREIO)</option><option>DBM 4/M (GUARATIBA)</option><option>DBM 5/M (SEPETIBA)</option><option>DBM 6/M (ITAIPU)</option>
-        </select>
-
         <label>Nome Completo</label>
         <input type="text" id="nome" placeholder="NOME SEM ABREVIAÇÕES" oninput="this.value = this.value.toUpperCase()">
 
         <label>RG Militar</label>
         <input type="number" id="rg" placeholder="DIGITE SEU RG">
-      
-        <label>E-mail</label>
-        <input type="email" id="email" placeholder="exemplo@email.com">
 
-        <label>Telefone / WhatsApp</label>
-        <input type="tel" id="telefone" placeholder="(XX) 9XXXX-XXXX">
+        <label>Unidade de Origem (Onde serve)</label>
+        <select id="unidadeServe">
+            <option value="">Selecione sua unidade...</option>
+            <option>CBA X</option><option>1º GMAR</option><option>2º GMAR</option><option>3º GMAR</option><option>4º GMAR</option><option>DBM 1/M (PAQUETÁ)</option><option>DBM 2/M (PISAN)</option><option>DBM 3/M (RECREIO)</option><option>DBM 4/M (GUARATIBA)</option><option>DBM 5/M (SEPETIBA)</option><option>DBM 6/M (ITAIPU)</option>
+        </select>
 
-        <div class="section-title">Local e Data</div>
+        <div class="section-title">Agendamento</div>
         
-        <label>Local de Destino (Onde fará a inspeção)</label>
+        <label>Local do Atendimento</label>
         <select id="unidadeDestino" onchange="configurarDatas()">
-            <option value="">Escolha para onde deseja ir...</option>
+            <option value="">Escolha o local...</option>
             <option value="1GMAR">1º GMAR - BOTAFOGO</option>
             <option value="GBS">GBS - BARRA DA TIJUCA</option>
             <option value="3GMAR">3º GMAR - COPACABANA</option>
@@ -89,7 +83,7 @@
 
         <label>Data</label>
         <select id="data" onchange="atualizarVagas()">
-            <option value="">Selecione a unidade primeiro...</option>
+            <option value="">Selecione o local primeiro...</option>
         </select>
 
         <div id="statusVagas" class="vagas-badge"></div>
@@ -101,27 +95,29 @@
         <div class="comp-item"><div class="comp-label">Militar:</div><div id="res-nome" class="comp-value"></div></div>
         <div class="comp-item"><div class="comp-label">RG:</div><div id="res-rg" class="comp-value"></div></div>
         <div class="comp-item"><div class="comp-label">Lotação:</div><div id="res-origem" class="comp-value"></div></div>
-        <div class="comp-item"><div class="comp-label">Local do Atendimento:</div><div id="res-local" class="comp-value"></div></div>
+        <div class="comp-item"><div class="comp-label">Local:</div><div id="res-local" class="comp-value"></div></div>
         <div class="comp-item"><div class="comp-label">Data:</div><div id="res-data" class="comp-value"></div></div>
         
         <button class="btn-print" onclick="window.print()">🖨️ IMPRIMIR / SALVAR PDF</button>
-        <button onclick="location.reload()" style="background:none; border:none; color:blue; cursor:pointer; text-decoration:underline; font-size: 0.8rem; margin-top: 15px;">Novo Agendamento</button>
+        <button onclick="location.reload()" style="background:none; border:none; color:blue; cursor:pointer; text-decoration:underline; font-size: 0.8rem; margin-top: 15px;">Fazer outro agendamento</button>
     </div>
 </div>
 
 <script>
-   const firebaseConfig = {
-    apiKey: "AIzaSyAPUZftC2cq-khKiNq6dHBqkQeaoNWrjRc",
-    authDomain: "inspecao-medica-cbax.firebaseapp.com",
-    projectId: "inspecao-medica-cbax",
-    storageBucket: "inspecao-medica-cbax.firebasestorage.app",
-    messagingSenderId: "1171422846",
-    appId: "1:1171422846:web:39b7e005699370ac22e22f"
-};
+    // CHAVE UNIFICADA (inspecao-saude-cbax)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBkq2D8JFuxzPTI2z_Iirg3rYfSFfPJRXY",
+        authDomain: "inspecao-saude-cbax.firebaseapp.com",
+        projectId: "inspecao-saude-cbax",
+        storageBucket: "inspecao-saude-cbax.firebasestorage.app",
+        messagingSenderId: "1011281662526",
+        appId: "1:1011281662526:web:1028e8a8d140684e98376f"
+    };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-  const escalaOdonto = {
+    const escalaOdonto = {
         "1GMAR": { vagas: 14, datas: ["11/03/2026","18/03/2026","25/03/2026","01/04/2026","08/04/2026","06/05/2026","13/05/2026","20/05/2026","27/05/2026","03/06/2026","10/06/2026","17/06/2026","24/06/2026","01/07/2026","08/07/2026","15/07/2026","22/07/2026","29/07/2026"] },
         "GBS": { vagas: 21, datas: ["10/03/2026","17/03/2026","24/03/2026","31/03/2026","28/04/2026","05/05/2026","12/05/2026","19/05/2026","26/05/2026","02/06/2026","09/06/2026","16/06/2026","23/06/2026","30/06/2026","07/07/2026","14/07/2026","21/07/2026","28/07/2026"] },
         "3GMAR": { vagas: 11, datas: ["10/03/2026","17/03/2026","24/03/2026","31/03/2026","07/04/2026","14/04/2026","28/04/2026","05/05/2026","12/05/2026","19/05/2026","26/05/2026","02/06/2026","09/06/2026","16/06/2026","23/06/2026","30/06/2026","07/07/2026","14/07/2026","21/07/2026","28/07/2026"] },
@@ -143,51 +139,65 @@
     async function atualizarVagas() {
         const local = document.getElementById("unidadeDestino").value;
         const dt = document.getElementById("data").value;
-        const b = document.getElementById("statusVagas");
+        const badge = document.getElementById("statusVagas");
         if (!local || !dt) return;
 
-        b.style.display = "block"; b.innerText = "🔍 Verificando...";
+        badge.style.display = "block"; badge.innerText = "🔍 Consultando vagas...";
+        
+        // Busca quantos já agendaram para este local e data na coleção odonto
         const snap = await db.collection("agendamentos_odonto").where("unidadeID", "==", local).where("data", "==", dt).get();
-        const restam = escalaOdonto[local].vagas - snap.size;
+        const ocupadas = snap.size;
+        const totalVagas = escalaOdonto[local].vagas;
+        const restam = totalVagas - ocupadas;
 
         if (restam <= 0) {
-            b.innerText = "❌ VAGAS ESGOTADAS"; b.className = "vagas-badge vagas-esgotado";
+            badge.innerText = "❌ VAGAS ESGOTADAS PARA ESTA DATA"; 
+            badge.className = "vagas-badge vagas-esgotado";
             document.getElementById("btnSalvar").disabled = true;
         } else {
-            b.innerText = `✅ ${restam} VAGAS DISPONÍVEIS`; b.className = "vagas-badge vagas-ok";
+            badge.innerText = `✅ ${restam} VAGAS RESTANTES`; 
+            badge.className = "vagas-badge vagas-ok";
             document.getElementById("btnSalvar").disabled = false;
         }
     }
 
     async function salvar() {
         const btn = document.getElementById("btnSalvar");
-        const d = {
+        const dados = {
             posto: document.getElementById("posto").value,
             nome: document.getElementById("nome").value.trim(),
             rg: document.getElementById("rg").value.trim(),
-            unidadeOrigem: document.getElementById("unidadeServe").value.trim(), 
-            email: document.getElementById("email").value.trim(),
-            telefone: document.getElementById("telefone").value.trim(),
+            unidadeOrigem: document.getElementById("unidadeServe").value,
             unidadeID: document.getElementById("unidadeDestino").value,
             unidadeNome: document.getElementById("unidadeDestino").options[document.getElementById("unidadeDestino").selectedIndex].text,
             data: document.getElementById("data").value,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        if (!d.posto || !d.nome || !d.rg || !d.unidadeOrigem || !d.data) return alert("Preencha todos os campos obrigatórios!");
+        if (!dados.posto || !dados.nome || !dados.rg || !dados.unidadeOrigem || !dados.data) {
+            return alert("Por favor, preencha todos os campos!");
+        }
 
-        btn.innerText = "SALVANDO..."; btn.disabled = true;
+        btn.innerText = "PROCESSANDO..."; btn.disabled = true;
 
         try {
-            await db.collection("agendamentos_odonto").add(d);
+            // Salva na coleção agendamentos_odonto do projeto unificado
+            await db.collection("agendamentos_odonto").add(dados);
+            
+            // Exibe o comprovante
             document.getElementById("form-content").style.display = "none";
             document.getElementById("comprovante").style.display = "block";
-            document.getElementById("res-nome").innerText = d.posto + " " + d.nome;
-            document.getElementById("res-rg").innerText = d.rg;
-            document.getElementById("res-origem").innerText = d.unidadeOrigem;
-            document.getElementById("res-local").innerText = d.unidadeNome;
-            document.getElementById("res-data").innerText = d.data;
-        } catch (e) { alert("Erro ao salvar."); btn.disabled = false; }
+            document.getElementById("res-nome").innerText = dados.posto + " " + dados.nome;
+            document.getElementById("res-rg").innerText = dados.rg;
+            document.getElementById("res-origem").innerText = dados.unidadeOrigem;
+            document.getElementById("res-local").innerText = dados.unidadeNome;
+            document.getElementById("res-data").innerText = dados.data;
+        } catch (e) { 
+            console.error(e);
+            alert("Erro ao salvar agendamento. Tente novamente."); 
+            btn.innerText = "Confirmar Agendamento";
+            btn.disabled = false; 
+        }
     }
 </script>
 </body>
