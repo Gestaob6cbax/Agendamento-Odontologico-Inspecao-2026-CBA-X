@@ -2,114 +2,160 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>ADM - AGENDAMENTO ODONTOLÓGICO 2026</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel ADM Premium - Inspeção Médica 2026</title>
+    
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
-        :root { --odonto-cyan: #00838f; --cba-blue: #0a2c6d; --cba-red: #b71c1c; --warning: #ff8f00; --excel-green: #2e7d32; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
-        
+        :root { 
+            --cba-red: #b71c1c; 
+            --cba-blue: #0a2c6d; 
+            --bg: #f0f2f5;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --polo-color: #0288d1;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+
         header { 
-            background: var(--odonto-cyan); 
-            color: white; 
-            padding: 20px; 
-            border-radius: 15px; 
-            border-bottom: 5px solid var(--cba-blue); 
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            background: white; padding: 20px 30px; border-radius: 15px; display: flex; 
+            justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-left: 10px solid var(--cba-red); margin-bottom: 25px;
         }
 
-        .header-left { display: flex; align-items: center; gap: 20px; }
-        
-        .contador-box {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            text-align: center;
-            min-width: 100px;
+        .header-info h1 { margin: 0; color: var(--cba-blue); font-size: 1.6rem; }
+        .header-info p { margin: 5px 0 0; color: #666; font-weight: bold; font-size: 0.9rem; }
+
+        /* --- BLOCOS DE ESTATÍSTICA --- */
+        .card-destaque-geral {
+            background: var(--cba-blue); color: white; padding: 20px; border-radius: 15px;
+            text-align: center; box-shadow: 0 4px 15px rgba(10, 44, 109, 0.2); margin-bottom: 25px;
         }
-        .contador-box span { display: block; font-size: 0.65rem; text-transform: uppercase; font-weight: bold; }
-        .contador-box strong { font-size: 1.5rem; display: block; }
+        .card-destaque-geral h3 { margin: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .card-destaque-geral p { margin: 5px 0 0; font-size: 3rem; font-weight: 900; }
 
-        .header-title h1 { margin: 0; font-size: 1.3rem; text-transform: uppercase; }
-        .header-title p { margin: 0; font-size: 0.85rem; font-weight: bold; opacity: 0.9; }
+        .section-title { 
+            font-size: 0.8rem; font-weight: bold; color: #555; 
+            text-transform: uppercase; margin: 25px 0 10px 5px; 
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-title::after { content: ""; flex: 1; height: 1px; background: #ddd; }
 
-        .header-right img { width: 65px; height: auto; }
-
-        .controls { background: white; padding: 15px; border-radius: 10px; display: flex; gap: 10px; margin-bottom: 20px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-wrap: wrap; }
-        input#lupa { flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        .grid-cards { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+            gap: 15px; margin-bottom: 20px; 
+        }
         
-        .btn-refresh { padding: 12px 15px; cursor: pointer; border-radius: 8px; background: var(--odonto-cyan); color: white; border: none; font-weight: bold; }
-        .btn-excel { background: var(--excel-green); color: white; border: none; padding: 12px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-mass-del { background: var(--cba-red); color: white; border: none; padding: 12px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; }
-        .btn-danger-zone { background: var(--warning); color: white; border: none; padding: 12px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .card-unidade { 
+            background: white; padding: 15px; border-radius: 12px; text-align: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-bottom: 4px solid var(--cba-red); 
+        }
+        .card-unidade h4 { font-size: 0.65rem; color: #888; text-transform: uppercase; margin: 0; min-height: 30px; display: flex; align-items: center; justify-content: center; }
+        .card-unidade p { font-size: 1.8rem; font-weight: bold; color: var(--cba-blue); margin: 5px 0 0; }
 
-        .table-container { background: white; border-radius: 10px; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
-        th { background: #f8f9fa; padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #dee2e6; color: #666; }
-        td { padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .card-polo { 
+            background: white; padding: 15px; border-radius: 12px; text-align: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-bottom: 4px solid var(--polo-color); 
+        }
+        .card-polo h4 { font-size: 0.65rem; color: #888; text-transform: uppercase; margin: 0; min-height: 30px; display: flex; align-items: center; justify-content: center; }
+        .card-polo p { font-size: 1.8rem; font-weight: bold; color: var(--polo-color); margin: 5px 0 0; }
+        /* -------------------------------- */
+
+        .controls-box { 
+            background: white; padding: 20px; border-radius: 15px; display: flex; 
+            gap: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); align-items: center;
+        }
+        #lupa { flex-grow: 1; padding: 12px 20px; border: 2px solid #eee; border-radius: 10px; outline: none; transition: 0.3s; font-size: 1rem; }
+        #lupa:focus { border-color: var(--cba-blue); }
+
+        .btn { 
+            padding: 12px 20px; border: none; border-radius: 10px; font-weight: bold; 
+            cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s; color: white;
+        }
+        .btn-refresh { background: var(--cba-blue); }
+        .btn-excel { background: var(--success); }
+        .btn-danger { background: var(--cba-red); }
+
+        .table-container { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; padding: 15px; text-align: left; font-size: 0.7rem; text-transform: uppercase; color: #888; border-bottom: 2px solid #eee; }
+        td { padding: 12px 15px; border-bottom: 1px solid #f1f1f1; font-size: 0.85rem; color: #333; }
         
-        .btn-individual-del { color: var(--cba-red); cursor: pointer; border: 1px solid #ffcdd2; padding: 4px 8px; border-radius: 5px; background: #fff5f5; font-size: 14px; }
+        .badge-turno { padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; }
+        .manha { background: #fff3e0; color: #e65100; }
+        .tarde { background: #e3f2fd; color: #0d47a1; }
+        .btn-del { color: var(--cba-red); background: #ffebee; border: 1px solid #ffcdd2; padding: 6px; border-radius: 8px; cursor: pointer; }
 
-        .import-section { margin-top: 30px; padding: 20px; background: #e8f5e9; border: 2px dashed var(--excel-green); border-radius: 10px; }
-        textarea { width: 100%; height: 80px; margin-top: 10px; border-radius: 8px; padding: 10px; border: 1px solid #ccc; box-sizing: border-box; font-family: monospace; font-size: 12px; }
-        .btn-import { background: var(--cba-blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .import-box { background: #fff; padding: 25px; border-radius: 15px; margin-top: 40px; border: 2px dashed #ccc; }
+        textarea { width: 100%; height: 100px; margin: 15px 0; padding: 15px; border-radius: 10px; border: 1px solid #ddd; font-family: monospace; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="header-left">
-        <div class="contador-box">
-            <span>Agendados</span>
-            <strong id="contadorTotal">0</strong>
-        </div>
-        <div class="header-title">
-            <h1>Painel ADM Odonto</h1>
-            <p>CBA X - AGENDAMENTO ODONTOLÓGICO 2026</p>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <img src="https://raw.githubusercontent.com/gestaob6cbax/INSPECAO-MEDICA-CBA-X-2026/main/logo_cba_x.png" width="70">
+        <div class="header-info">
+            <h1>Gestão de Inspeção Médica</h1>
+            <p>COMANDO DE BOMBEIROS DE ÁREA X - 2026</p>
         </div>
     </div>
-    <div class="header-right">
-        <img src="https://raw.githubusercontent.com/gestaob6cbax/INSPECAO-MEDICA-CBA-X-2026/main/logo_cba_x.png" alt="Logo CBA X">
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-excel" onclick="baixarPlanilha()">📥 Baixar Relatório</button>
+        <button class="btn btn-danger" onclick="resetarTudo()">⚠️ Resetar Sistema</button>
     </div>
 </header>
 
-<div class="controls">
-    <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" title="Selecionar Todos">
-    <input type="text" id="lupa" placeholder="🔍 Filtrar por Nome, RG, Unidade ou Local..." oninput="filtrar()">
-    <button class="btn-refresh" onclick="carregarDados()">🔄 Atualizar</button>
-    <button class="btn-excel" onclick="baixarExcel()">📥 BAIXAR EXCEL</button>
-    <button id="btnExcluirMassa" class="btn-mass-del" onclick="excluirSelecionados()">🗑️ Excluir Selecionados</button>
-    <button class="btn-danger-zone" onclick="resetarBancoCompleto()">⚠️ LIMPAR TUDO</button>
+<div class="card-destaque-geral">
+    <h3>Total de Militares em Inspeção Médica</h3>
+    <p id="totalGeral">0</p>
+</div>
+
+<div class="section-title">Efetivo por Unidade de Origem</div>
+<div id="gridUnidades" class="grid-cards"></div>
+
+<div class="section-title">Efetivo por Polo de Atendimento</div>
+<div id="gridPolos" class="grid-cards"></div>
+
+<div class="controls-box">
+    <input type="text" id="lupa" placeholder="🔍 Pesquise por Nome, RG ou Unidade (Ex: CER)..." onkeyup="filtrar()">
+    <button class="btn btn-refresh" onclick="carregarDados()">🔄 Atualizar</button>
 </div>
 
 <div class="table-container">
-    <table>
+    <table id="tabelaADM">
         <thead>
             <tr>
-                <th width="30">Sel.</th>
                 <th>Data</th>
                 <th>Turno</th>
-                <th>Local Atendimento</th>
-                <th>Unidade</th>
-                <th>Nome</th>
-                <th>Posto</th>
+                <th>Militar</th>
                 <th>RG</th>
-                <th style="text-align:center;">Ação</th>
+                <th>Origem</th>
+                <th>Telefone</th>
+                <th>E-mail</th>
+                <th>Local</th>
+                <th>Ações</th>
             </tr>
         </thead>
-        <tbody id="tabelaDados">
-            <tr><td colspan="9" style="text-align:center; padding:30px;">Iniciando sistema...</td></tr>
+        <tbody id="corpoTabela">
+            <tr><td colspan="9" style="text-align:center; padding:40px;">Sincronizando registros...</td></tr>
         </tbody>
     </table>
 </div>
 
+<div class="import-box">
+    <h3 style="margin:0; color: var(--warning);">📥 Importar Dados do Excel</h3>
+    <p style="font-size: 0.8rem; color: #777; margin-top: 5px;">Ordem: <b>Data | Turno | Local | Origem | Nome | Posto | RG | Telefone | E-mail</b></p>
+    <textarea id="textoExcel" placeholder="Cole as linhas da planilha aqui..."></textarea>
+    <button class="btn btn-refresh" style="width: 100%; justify-content: center; background: var(--success);" onclick="importarDados()">🚀 Sincronizar com Banco de Dados</button>
+</div>
+
 <script>
-    const firebaseConfig = { 
+    const firebaseConfig = {
         apiKey: "AIzaSyBkq2D8JFuxzPTI2z_Iirg3rYfSFfPJRXY",
         authDomain: "inspecao-saude-cbax.firebaseapp.com",
         projectId: "inspecao-saude-cbax",
@@ -122,105 +168,134 @@
     const db = firebase.firestore();
 
     async function carregarDados() {
-        const corpo = document.getElementById("tabelaDados");
-        const contador = document.getElementById("contadorTotal");
-        corpo.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:20px;'>🔄 Sincronizando...</td></tr>";
+        const corpo = document.getElementById("corpoTabela");
+        corpo.innerHTML = '<tr><td colspan="9" style="text-align:center;">Carregando...</td></tr>';
         
         try {
-            const snap = await db.collection("agendamentos_odonto").get();
+            const snap = await db.collection("agendamentos_saude").get();
             let lista = [];
-            snap.forEach(doc => lista.push({id: doc.id, ...doc.data()}));
-            
-            lista.sort((a,b) => {
-                const dateA = a.data ? a.data.split('/').reverse().join('') : '';
-                const dateB = b.data ? b.data.split('/').reverse().join('') : '';
-                return dateA.localeCompare(dateB);
+            let unidadesMap = {};
+            let polosMap = {};
+
+            snap.forEach(doc => {
+                const d = doc.data();
+                lista.push({id: doc.id, ...d});
+                
+                // Contagem por Origem
+                let un = d.unidadeOrigem || "N/I";
+                unidadesMap[un] = (unidadesMap[un] || 0) + 1;
+
+                // Contagem por Polo (Destino)
+                let polo = d.unidadeDestino || "N/I";
+                polosMap[polo] = (polosMap[polo] || 0) + 1;
             });
+
+            lista.sort((a,b) => b.timestamp - a.timestamp);
 
             let html = "";
             lista.forEach(d => {
+                const classeTurno = d.turno === "Manhã" ? "manha" : "tarde";
                 html += `<tr>
-                    <td><input type="checkbox" class="row-check" value="${d.id}" onclick="showMassDelBtn()"></td>
-                    <td><b>${d.data || '-'}</b></td>
-                    <td>${d.turno || '-'}</td>
-                    <td><small>${d.localAtendimento || '-'}</small></td>
-                    <td><small style="color:blue">${d.unidadeOrigem || '-'}</small></td>
-                    <td>${d.nome || '-'}</td>
-                    <td>${d.posto || '-'}</td>
-                    <td><code>${d.rg || '-'}</code></td>
-                    <td style="text-align:center;"><button class="btn-individual-del" onclick="excluirIndividual('${d.id}')">🗑️</button></td>
+                    <td><b>${d.data}</b></td>
+                    <td><span class="badge-turno ${classeTurno}">${d.turno}</span></td>
+                    <td>${d.posto} ${d.nome}</td>
+                    <td><code>${d.rg}</code></td>
+                    <td>${d.unidadeOrigem}</td>
+                    <td>${d.telefone || '-'}</td>
+                    <td><small>${d.email || '-'}</small></td>
+                    <td><small>${d.unidadeDestino}</small></td>
+                    <td><button class="btn-del" onclick="excluirRegistro('${d.id}')">🗑️</button></td>
                 </tr>`;
             });
-            corpo.innerHTML = html || "<tr><td colspan='9' style='text-align:center;'>Nenhum registro encontrado.</td></tr>";
-            contador.innerText = lista.length;
-            showMassDelBtn();
-            document.getElementById("selectAll").checked = false;
-        } catch (e) {
-            corpo.innerHTML = "<tr><td colspan='9' style='color:red;'>Erro ao carregar dados.</td></tr>";
+
+            corpo.innerHTML = html || '<tr><td colspan="9" style="text-align:center;">Nenhum agendamento encontrado.</td></tr>';
+            document.getElementById("totalGeral").innerText = lista.length;
+
+            // Renderizar Cards de Unidades (Origem)
+            let uniHtml = "";
+            Object.keys(unidadesMap).sort().forEach(un => {
+                uniHtml += `<div class="card-unidade"><h4>${un}</h4><p>${unidadesMap[un]}</p></div>`;
+            });
+            document.getElementById("gridUnidades").innerHTML = uniHtml;
+
+            // Renderizar Cards de Polos (Destino)
+            let polosHtml = "";
+            Object.keys(polosMap).sort().forEach(p => {
+                polosHtml += `<div class="card-polo"><h4>${p}</h4><p>${polosMap[p]}</p></div>`;
+            });
+            document.getElementById("gridPolos").innerHTML = polosHtml;
+
+        } catch (e) { console.error(e); }
+    }
+
+    async function importarDados() {
+        const texto = document.getElementById("textoExcel").value;
+        if(!texto.trim()) return alert("Cole os dados primeiro!");
+        const linhas = texto.split('\n');
+        let contador = 0;
+        let ignorados = 0;
+
+        for(let l of linhas) {
+            if(!l.trim()) continue;
+            const c = l.split('\t');
+            if(c.length >= 7) {
+                const rgImport = c[6]?.trim();
+                const check = await db.collection("agendamentos_saude").where("rg", "==", rgImport).get();
+                
+                if(check.empty) {
+                    await db.collection("agendamentos_saude").add({
+                        data: c[0]?.trim(),
+                        turno: c[1]?.trim(),
+                        unidadeDestino: c[2]?.trim(),
+                        unidadeOrigem: c[3]?.trim(),
+                        nome: c[4]?.trim().toUpperCase(),
+                        posto: c[5]?.trim().toUpperCase(),
+                        rg: rgImport,
+                        telefone: c[7]?.trim() || "Não informado",
+                        email: c[8]?.trim() || "Não informado",
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    contador++;
+                } else {
+                    ignorados++;
+                }
+            }
         }
+        alert(`${contador} militares sincronizados! (${ignorados} já existiam e foram pulados)`);
+        document.getElementById("textoExcel").value = "";
+        carregarDados();
+    }
+
+    async function excluirRegistro(id) {
+        if(confirm("Deseja realmente excluir este agendamento?")) {
+            await db.collection("agendamentos_saude").doc(id).delete();
+            carregarDados();
+        }
+    }
+
+    async function resetarTudo() {
+        if(confirm("🚨 ATENÇÃO: Deseja ZERAR TODO o banco de dados?")) {
+            const snap = await db.collection("agendamentos_saude").get();
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("Banco de dados resetado com sucesso!");
+            carregarDados();
+        }
+    }
+
+    function baixarPlanilha() {
+        const table = document.getElementById("tabelaADM");
+        const wb = XLSX.utils.table_to_book(table);
+        XLSX.writeFile(wb, "Relatorio_Geral_Inspecao_Medica_2026.xlsx");
     }
 
     function filtrar() {
         const busca = document.getElementById("lupa").value.toUpperCase();
-        document.querySelectorAll("#tabelaDados tr").forEach(r => {
+        const rows = document.querySelectorAll("#corpoTabela tr");
+        rows.forEach(r => {
             r.style.display = r.innerText.toUpperCase().includes(busca) ? "" : "none";
         });
-    }
-
-    function toggleSelectAll() {
-        const master = document.getElementById("selectAll").checked;
-        document.querySelectorAll(".row-check").forEach(c => {
-            if(c.closest('tr').style.display !== "none") c.checked = master;
-        });
-        showMassDelBtn();
-    }
-
-    function showMassDelBtn() {
-        const qtd = document.querySelectorAll(".row-check:checked").length;
-        document.getElementById("btnExcluirMassa").style.display = qtd > 0 ? "inline-block" : "none";
-        document.getElementById("btnExcluirMassa").innerText = `🗑️ Excluir ${qtd} Selecionados`;
-    }
-
-    async function excluirIndividual(id) {
-        if(confirm("Excluir este agendamento?")) {
-            await db.collection("agendamentos_odonto").doc(id).delete();
-            carregarDados();
-        }
-    }
-
-    async function excluirSelecionados() {
-        if(!confirm("Excluir agendamentos selecionados?")) return;
-        const checks = document.querySelectorAll(".row-check:checked");
-        for(let c of checks) await db.collection("agendamentos_odonto").doc(c.value).delete();
-        carregarDados();
-    }
-
-    async function resetarBancoCompleto() {
-        if(confirm("🚨 EXCLUIR TUDO? Esta ação não pode ser desfeita!")) {
-            const snap = await db.collection("agendamentos_odonto").get();
-            const batch = db.batch();
-            snap.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-            alert("Banco de dados limpo com sucesso!");
-            carregarDados();
-        }
-    }
-
-    function baixarExcel() {
-        let csv = "Data;Turno;Local;Unidade;Nome;Posto;RG\n";
-        document.querySelectorAll("#tabelaDados tr").forEach(linha => {
-            const cols = linha.querySelectorAll("td");
-            if(cols.length > 1) {
-                let r = [];
-                for(let i=1; i<8; i++) r.push(cols[i].innerText.replace(/;/g, ","));
-                csv += r.join(";") + "\n";
-            }
-        });
-        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "AGENDAMENTOS_ODONTO_2026.csv");
-        link.click();
     }
 
     window.onload = carregarDados;
