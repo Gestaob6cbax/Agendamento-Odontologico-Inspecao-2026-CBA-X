@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>ADM - INSPEÇÃO DE SAÚDE 2026</title>
+    <title>ADM - AGENDAMENTO ODONTOLÓGICO 2026</title>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
@@ -70,7 +70,7 @@
         </div>
         <div class="header-title">
             <h1>Painel ADM Odonto</h1>
-            <p>CBA X - INSPEÇÃO DE SAÚDE 2026</p>
+            <p>CBA X - AGENDAMENTO ODONTOLÓGICO 2026</p>
         </div>
     </div>
     <div class="header-right">
@@ -80,7 +80,7 @@
 
 <div class="controls">
     <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" title="Selecionar Todos">
-    <input type="text" id="lupa" placeholder="🔍 Filtrar por Nome, RG, Unidade ou Local..." onkeyup="filtrar()">
+    <input type="text" id="lupa" placeholder="🔍 Filtrar por Nome, RG, Unidade ou Local..." oninput="filtrar()">
     <button class="btn-refresh" onclick="carregarDados()">🔄 Atualizar</button>
     <button class="btn-excel" onclick="baixarExcel()">📥 BAIXAR EXCEL</button>
     <button id="btnExcluirMassa" class="btn-mass-del" onclick="excluirSelecionados()">🗑️ Excluir Selecionados</button>
@@ -94,7 +94,7 @@
                 <th width="30">Sel.</th>
                 <th>Data</th>
                 <th>Turno</th>
-                <th>Local Inspeção</th>
+                <th>Local Atendimento</th>
                 <th>Unidade</th>
                 <th>Nome</th>
                 <th>Posto</th>
@@ -138,7 +138,6 @@
             let lista = [];
             snap.forEach(doc => lista.push({id: doc.id, ...doc.data()}));
             
-            // Ordenação por data (formato DD/MM/YYYY)
             lista.sort((a,b) => a.data.split('/').reverse().join('').localeCompare(b.data.split('/').reverse().join('')));
 
             let html = "";
@@ -170,27 +169,38 @@
         
         const linhas = raw.split('\n');
         const btn = document.querySelector(".btn-import");
-        btn.innerText = "⏳ SINCRONIZANDO...";
+        btn.innerText = "⏳ VERIFICANDO DUPLICADOS...";
         btn.disabled = true;
 
         let ok = 0;
+        let pulados = 0;
+
         for(let l of linhas) {
             const c = l.split('\t');
             if(c.length >= 7) {
-                await db.collection("agendamentos_odonto").add({
-                    data: c[0].trim(),
-                    turno: c[1].trim(),
-                    localAtendimento: c[2].trim(),
-                    unidadeOrigem: c[3].trim(),
-                    nome: c[4].trim().toUpperCase(),
-                    posto: c[5].trim().toUpperCase(),
-                    rg: c[6].trim(),
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                ok++;
+                const rgCheck = c[6].trim();
+                
+                // VERIFICA SE O RG JÁ EXISTE NO BANCO
+                const consulta = await db.collection("agendamentos_odonto").where("rg", "==", rgCheck).get();
+                
+                if(consulta.empty) {
+                    await db.collection("agendamentos_odonto").add({
+                        data: c[0].trim(),
+                        turno: c[1].trim(),
+                        localAtendimento: c[2].trim(),
+                        unidadeOrigem: c[3].trim(),
+                        nome: c[4].trim().toUpperCase(),
+                        posto: c[5].trim().toUpperCase(),
+                        rg: rgCheck,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    ok++;
+                } else {
+                    pulados++;
+                }
             }
         }
-        alert(ok + " registros sincronizados!");
+        alert(`Sincronização concluída!\n✅ ${ok} novos registros.\n⚠️ ${pulados} já existiam e foram pulados.`);
         btn.innerText = "🚀 Sincronizar Banco";
         btn.disabled = false;
         document.getElementById("textoExcel").value = "";
@@ -210,7 +220,7 @@
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "agendamentos_odonto_2026.csv");
+        link.setAttribute("download", "AGENDAMENTOS_ODONTO_CBAX_2026.csv");
         link.click();
     }
 
@@ -228,6 +238,7 @@
     function filtrar() {
         const busca = document.getElementById("lupa").value.toUpperCase();
         document.querySelectorAll("#tabelaDados tr").forEach(r => {
+            if(r.innerText.toUpperCase().includes("SINCRO")) return; // Não esconde o carregando
             r.style.display = r.innerText.toUpperCase().includes(busca) ? "" : "none";
         });
     }
@@ -264,4 +275,3 @@
 </script>
 </body>
 </html>
-
