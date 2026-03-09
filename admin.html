@@ -303,22 +303,19 @@
                 const d = doc.data();
                 lista.push({id: doc.id, ...d});
                 
-                // --- FILTRO DE UNIDADES (Remove RGs) ---
+                // --- FILTRO DE UNIDADES ---
                 let unRaw = d.unidadeOrigem || d.unidadeServe || d.unidade || "NÃO INFORMADO";
                 let un = unRaw.trim().toUpperCase();
-                
-                // Se NÃO for número e tiver mais de 3 letras, cria o card da unidade
                 if (un && isNaN(un) && un.length > 3) {
                     unidadesMap[un] = (unidadesMap[un] || 0) + 1;
                 }
 
-                // --- FILTRO DE POLOS ---
-                let poloRaw = d.unidadeDestino || d.poloAtendimento || "NÃO INFORMADO";
+                // --- FILTRO DE POLOS (MUDANÇA AQUI: LÊ TODAS AS VARIANTES) ---
+                let poloRaw = d.unidadeDestino || d.localAtendimento || d.poloAtendimento || "NÃO INFORMADO";
                 let polo = poloRaw.trim().toUpperCase();
                 polosMap[polo] = (polosMap[polo] || 0) + 1;
             });
 
-            // Ordenação (mantendo o que você já tinha)
             lista.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
             let html = "";
@@ -332,7 +329,7 @@
                     <td>${d.unidadeOrigem || d.unidadeServe || d.unidade || '-'}</td>
                     <td>${d.telefone || '-'}</td>
                     <td><small>${d.email || '-'}</small></td>
-                    <td style="color:var(--odonto-color); font-weight:bold">${d.unidadeDestino || d.poloAtendimento || '-'}</td>
+                    <td style="color:var(--odonto-color); font-weight:bold">${d.unidadeDestino || d.localAtendimento || d.poloAtendimento || '-'}</td>
                     <td>${turnoDisplay}</td>
                     <td><button class="btn-del" onclick="excluirRegistro('${d.id}')">🗑️</button></td>
                 </tr>`;
