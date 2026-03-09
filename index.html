@@ -151,7 +151,7 @@
 
     <div class="block-header">Bloco 2: Dados da Consulta</div>
     <div class="form-section">
-        <label>Polo de Atendimento:</label>
+        <label>Local da Inspeção:</label>
         <select id="unidade" onchange="carregarDatas()">
             <option value="">Selecione o Polo...</option>
             <option value="1GMAR">1º GMAR - BOTAFOGO</option>
@@ -188,7 +188,9 @@
         appId: "1:545212689993:web:b4b85a03bb2dcac9739998"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.firestore();
 
     const datas = {
@@ -261,17 +263,18 @@
         btn.innerText = "Verificando...";
 
         try {
-            const consultaRG = await db.collection("agendamentos").where("rg","==",rg).get();
+            // AJUSTE: Busca na coleção correta agendamentos_odonto
+            const consultaRG = await db.collection("agendamentos_odonto").where("rg","==",rg).get();
             if(!consultaRG.empty){
                 alert("Já existe um agendamento para este RG.");
                 btn.disabled = false; btn.innerText = "Confirmar Agendamento";
                 return;
             }
 
-            const consulta = await db.collection("agendamentos")
-                .where("unidade","==",unidadeTexto)
+            const consulta = await db.collection("agendamentos_odonto")
+                .where("unidadeDestino","==",unidadeTexto)
                 .where("data","==",data)
-                .where("horario","==",horario)
+                .where("turno","==",horario) // O ADM lê o horário no campo 'turno'
                 .get();
 
             if(!consulta.empty){
@@ -280,19 +283,21 @@
                 return;
             }
 
+            // AJUSTE: Nomes dos campos para bater com o Painel ADM
             let dados = {
-                unidadeServe: document.getElementById("unidadeServe").value,
+                unidadeOrigem: document.getElementById("unidadeServe").value,
                 posto: document.getElementById("posto").value,
                 nome: document.getElementById("nome").value.toUpperCase(),
                 rg: rg,
                 telefone: document.getElementById("telefone").value,
                 email: document.getElementById("email").value,
-                unidade: unidadeTexto, 
-                data, horario,
-                criadoEm: new Date()
+                unidadeDestino: unidadeTexto, 
+                data: data, 
+                turno: horario, // Salvo como turno para aparecer na coluna turno do ADM
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            await db.collection("agendamentos").add(dados);
+            await db.collection("agendamentos_odonto").add(dados);
             mostrarConfirmacao(dados);
             gerarPDF(dados);
             btn.style.display = "none";
@@ -310,7 +315,7 @@
         box.innerHTML=`
             <h3 style="margin-top:0;">Agendamento Confirmado!</h3>
             <p><strong>Militar:</strong> ${d.posto} ${d.nome}</p>
-            <p><strong>Polo:</strong> ${d.unidade} | <strong>Data:</strong> ${d.data} às ${d.horario}</p>
+            <p><strong>Local da Inspeção:</strong> ${d.unidadeDestino} | <strong>Data:</strong> ${d.data} às ${d.turno}</p>
             <p style="color:red; font-size:0.8rem; font-weight:bold;">O comprovante PDF foi baixado automaticamente.</p>
         `;
     }
@@ -323,9 +328,9 @@
         doc.text("----------------------------------------------------------", 15, 28);
         doc.text("Militar: " + d.posto + " " + d.nome, 15, 40);
         doc.text("RG: " + d.rg, 15, 50);
-        doc.text("Polo de Atendimento: " + d.unidade, 15, 60);
+        doc.text("Local da Inspeção: " + d.unidadeDestino, 15, 60);
         doc.text("Data: " + d.data, 15, 70);
-        doc.text("Horário: " + d.horario, 15, 80);
+        doc.text("Horário: " + d.turno, 15, 80);
         doc.text("----------------------------------------------------------", 15, 90);
         doc.setFontSize(10);
         doc.text("Emitido em: " + new Date().toLocaleString(), 15, 100);
