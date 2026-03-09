@@ -107,7 +107,7 @@
    <header>
     <img src="logo.png" alt="Logo CBA X">
     <h1>Agendamento Odontológico</h1>
-    <p>CBA X - Gestão 2026</p>
+    <p>CBA X - 6ª Seção - Gestão 2026</p>
 </header>
 
     <h2>Dados do Militar</h2>
@@ -197,7 +197,6 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Variável para armazenar dados para a impressão
     let dadosParaImpressao = null;
 
     async function salvar() {
@@ -246,95 +245,72 @@
         }
     }
 
-   function imprimirComprovante() {
-    if(!dadosParaImpressao) return;
-    
-    const dataFormatada = dadosParaImpressao.data.split('-').reverse().join('/');
-    const win = window.open('', '', 'height=700,width=700');
-    
-    win.document.write(`
-        <html>
-        <head>
-            <title>Comprovante Odonto</title>
-            <style>
-                body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 40px; text-align: center; color: #333; }
-                .header { border-bottom: 2px solid #0a2c6d; padding-bottom: 10px; margin-bottom: 20px; }
-                .titulo { font-size: 20px; font-weight: bold; text-transform: uppercase; margin: 10px 0; color: #0a2c6d; }
-                .sessao-txt { font-weight: bold; font-size: 14px; margin-bottom: 20px; color: #555; }
-                .box { text-align: left; border: 1px solid #ccc; padding: 20px; border-radius: 12px; margin-top: 20px; background-color: #f9f9f9; }
-                .info-label { font-weight: bold; color: #555; text-transform: uppercase; font-size: 0.8rem; }
-                .info-valor { font-size: 1.1rem; margin-bottom: 10px; display: block; }
-                hr { border: 0; border-top: 1px dashed #ccc; margin: 15px 0; }
-                .footer { margin-top: 40px; font-size: 12px; color: #777; line-height: 1.5; }
-                @media print {
-                    body { padding: 20px; }
-                    button { display: none; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <img src="logo.png" width="80" alt="Logo">
-                <div class="titulo">Comprovante de Agendamento Odontológico</div>
-                <div class="sessao-txt">CBA X - 6ºSEÇÃO</div>
-            </div>
-            
-            <div class="box">
-                <span class="info-label">Dados do Militar:</span>
-                <span class="info-valor">${dadosParaImpressao.posto} ${dadosParaImpressao.nome}</span>
-                
-                <span class="info-label">RG Militar:</span>
-                <span class="info-valor">${dadosParaImpressao.rg}</span>
-                
-                <span class="info-label">Unidade de Origem:</span>
-                <span class="info-valor">${dadosParaImpressao.unidadeServe}</span>
-                
-                <hr>
-                
-                <span class="info-label">Polo de Atendimento:</span>
-                <span class="info-valor">${dadosParaImpressao.poloAtendimento}</span>
-                
-                <span class="info-label">Data e Turno:</span>
-                <span class="info-valor">${dataFormatada} - ${dadosParaImpressao.turno}</span>
-            </div>
-
-            <div class="footer">
-                <strong>Solicitação realizada em:</strong> ${new Date().toLocaleString('pt-BR')} <br>
-                <em>Este é um comprovante digital gerado pela Sexta Seção. Realize o print ou imprima para apresentação.</em> <br>
-                <strong>Compareça com 15 minutos de antecedência.</strong>
-            </div>
-        </body>
-        </html>
-    `);
-    
-    win.document.close();
-    
-    // Pequeno atraso para garantir que o logo.png seja renderizado antes da impressão
-    setTimeout(() => {
-        win.print();
-    }, 500);
-}
+    function imprimirComprovante() {
+        if(!dadosParaImpressao) return;
+        
+        const dataFormatada = dadosParaImpressao.data.split('-').reverse().join('/');
+        const win = window.open('', '', 'height=700,width=700');
+        
+        win.document.write(`
+            <html>
+            <head>
+                <title>Comprovante Odonto</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 40px; text-align: center; color: #333; }
+                    .header { border-bottom: 2px solid #0a2c6d; padding-bottom: 10px; margin-bottom: 20px; }
+                    .titulo { font-size: 20px; font-weight: bold; text-transform: uppercase; margin: 10px 0; color: #0a2c6d; }
+                    .sessao-txt { font-weight: bold; font-size: 14px; margin-bottom: 20px; color: #555; }
+                    .box { text-align: left; border: 1px solid #ccc; padding: 20px; border-radius: 12px; margin-top: 20px; background-color: #f9f9f9; }
+                    .info-label { font-weight: bold; color: #555; text-transform: uppercase; font-size: 0.8rem; }
+                    .info-valor { font-size: 1.1rem; margin-bottom: 10px; display: block; }
+                    hr { border: 0; border-top: 1px dashed #ccc; margin: 15px 0; }
+                    .footer { margin-top: 40px; font-size: 12px; color: #777; line-height: 1.5; }
+                    @media print {
+                        body { padding: 20px; }
+                        button { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="logo.png" width="80" alt="Logo">
+                    <div class="titulo">Comprovante de Agendamento Odontológico</div>
+                    <div class="sessao-txt">CBA X - 6ª SEÇÃO</div>
+                </div>
                 
                 <div class="box">
-                    <p><span class="info-label">MILITAR:</span> ${dadosParaImpressao.posto} ${dadosParaImpressao.nome}</p>
-                    <p><span class="info-label">RG:</span> ${dadosParaImpressao.rg}</p>
-                    <p><span class="info-label">UNIDADE DE ORIGEM:</span> ${dadosParaImpressao.unidadeServe}</p>
+                    <span class="info-label">Dados do Militar:</span>
+                    <span class="info-valor">\${dadosParaImpressao.posto} \${dadosParaImpressao.nome}</span>
+                    
+                    <span class="info-label">RG Militar:</span>
+                    <span class="info-valor">\${dadosParaImpressao.rg}</span>
+                    
+                    <span class="info-label">Unidade de Origem:</span>
+                    <span class="info-valor">\${dadosParaImpressao.unidadeServe}</span>
+                    
                     <hr>
-                    <p><span class="info-label">POLO DE ATENDIMENTO:</span> ${dadosParaImpressao.poloAtendimento}</p>
-                    <p><span class="info-label">DATA:</span> ${dataFormatada}</p>
-                    <p><span class="info-label">TURNO/HORÁRIO:</span> ${dadosParaImpressao.turno}</p>
+                    
+                    <span class="info-label">Polo de Atendimento:</span>
+                    <span class="info-valor">\${dadosParaImpressao.poloAtendimento}</span>
+                    
+                    <span class="info-label">Data e Turno:</span>
+                    <span class="info-valor">\${dataFormatada} - \${dadosParaImpressao.turno}</span>
                 </div>
 
                 <div class="footer">
-                    Solicitação realizada em: ${new Date().toLocaleString('pt-BR')} <br>
-                    <em>Compareça ao polo com 15 minutos de antecedência.</em>
+                    <strong>Solicitação realizada em:</strong> \${new Date().toLocaleString('pt-BR')} <br>
+                    <em>Este é um comprovante digital gerado pela 6ª Seção. Realize o print ou imprima para apresentação.</em> <br>
+                    <strong>Compareça com 15 minutos de antecedência.</strong>
                 </div>
             </body>
             </html>
         `);
         
         win.document.close();
-        win.print();
+        
+        setTimeout(() => {
+            win.print();
+        }, 500);
     }
 </script>
 
