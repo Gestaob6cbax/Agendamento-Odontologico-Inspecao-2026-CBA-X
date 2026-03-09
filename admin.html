@@ -125,25 +125,26 @@
                 <th>Militar</th>
                 <th>RG Mil</th>
                 <th>Unidade Origem</th>
+                <th>Telefone</th>
+                <th>E-mail</th>
                 <th>Polo de Atendimento</th>
                 <th>Ações</th>
             </tr>
         </thead>
         <tbody id="corpoTabela">
-            <tr><td colspan="7" style="text-align:center; padding:40px;">Buscando registros...</td></tr>
+            <tr><td colspan="9" style="text-align:center; padding:40px;">Buscando registros...</td></tr>
         </tbody>
     </table>
 </div>
 
 <div class="import-box">
     <h3 style="margin:0; color: var(--odonto-color);">📥 Importar Dados do Excel</h3>
-    <p style="font-size: 0.8rem; color: #777; margin-top: 5px;">Ordem: <b>Data | Turno | Polo | Unidade Origem | Nome | RG</b></p>
+    <p style="font-size: 0.8rem; color: #777; margin-top: 5px;">Ordem: <b>Data | Turno | Militar | RG | Origem | Telefone | E-mail | Local</b></p>
     <textarea id="textoExcel" placeholder="Cole as linhas da planilha aqui..."></textarea>
     <button class="btn btn-refresh" style="width: 100%; justify-content: center; background: var(--success);" onclick="importarDados()">🚀 Sincronizar com Banco de Dados</button>
 </div>
 
 <script>
-    // USANDO AS CREDENCIAIS DA ODONTO QUE VOCÊ JÁ POSSUI
     const firebaseConfig = {
         apiKey: "AIzaSyBkq2D8JFuxzPTI2z_Iirg3rYfSFfPJRXY",
         authDomain: "agendamento-odonto-cbax.firebaseapp.com",
@@ -158,7 +159,7 @@
 
     async function carregarDados() {
         const corpo = document.getElementById("corpoTabela");
-        corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sincronizando...</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="9" style="text-align:center;">Sincronizando...</td></tr>';
         
         try {
             const snap = await db.collection("agendamentos_odonto").get();
@@ -170,12 +171,10 @@
                 const d = doc.data();
                 lista.push({id: doc.id, ...d});
                 
-                // Agrupamento por Origem
-                let un = d.unidadeServe || d.unidadeOrigem || "N/I";
+                let un = d.unidadeServe || "N/I";
                 unidadesMap[un] = (unidadesMap[un] || 0) + 1;
 
-                // Agrupamento por Polo
-                let polo = d.unidade || d.poloAtendimento || "Não informado";
+                let polo = d.unidade || "Não informado";
                 polosMap[polo] = (polosMap[polo] || 0) + 1;
             });
 
@@ -188,16 +187,17 @@
                     <td>${d.turno || '-'}</td>
                     <td>${d.nome || 'N/I'}</td>
                     <td><code>${d.rg || '-'}</code></td>
-                    <td>${d.unidadeServe || d.unidadeOrigem || 'N/I'}</td>
-                    <td style="color:var(--odonto-color); font-weight:bold">${d.unidade || d.poloAtendimento || '-'}</td>
+                    <td>${d.unidadeServe || 'N/I'}</td>
+                    <td>${d.telefone || '-'}</td>
+                    <td><small>${d.email || '-'}</small></td>
+                    <td style="color:var(--odonto-color); font-weight:bold">${d.unidade || '-'}</td>
                     <td><button class="btn-del" onclick="excluirRegistro('${d.id}')">🗑️</button></td>
                 </tr>`;
             });
 
-            corpo.innerHTML = html || '<tr><td colspan="7" style="text-align:center;">Sem dados.</td></tr>';
+            corpo.innerHTML = html || '<tr><td colspan="9" style="text-align:center;">Sem dados.</td></tr>';
             document.getElementById("totalGeral").innerText = lista.length;
 
-            // Renderizar Cards Únicos
             renderizarResumo(unidadesMap, "gridUnidades", "card-unidade");
             renderizarResumo(polosMap, "gridPolos", "card-polo");
 
@@ -207,14 +207,77 @@
     function renderizarResumo(mapa, containerId, classeCard) {
         let html = "";
         Object.keys(mapa).sort().forEach(chave => {
-            html += `<div class="${classeCard}"><h4>${chave}</h4><p>${mapa[chave]}</p></div>`;
+            if(chave !== "undefined" && chave !== "") html += `<div class="${classeCard}"><h4>${chave}</h4><p>${mapa[chave]}</p></div>`;
         });
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ... (Mantenha as funções de importarDados, excluirRegistro, resetarTudo e filtrar) ...
-    // Importante: Na importarDados(), altere a coleção para "agendamentos_odonto"
-    
+    async function importarDados() {
+        const texto = document.getElementById("textoExcel").value;
+        if(!texto.trim()) return alert("Cole os dados primeiro!");
+        
+        const linhas = texto.split('\n');
+        let contador = 0;
+
+        for(let l of linhas) {
+            if(!l.trim()) continue;
+            const c = l.split('\t');
+            
+            // Ordem: Data(0) | Turno(1) | Militar(2) | RG(3) | Origem(4) | Telefone(5) | E-mail(6) | Local(7)
+            if(c.length >= 4) { 
+                const rgImport = c[3]?.trim();
+                const check = await db.collection("agendamentos_odonto").where("rg", "==", rgImport).get();
+                
+                if(check.empty) {
+                    await db.collection("agendamentos_odonto").add({
+                        data: c[0]?.trim(),
+                        turno: c[1]?.trim(),
+                        nome: c[2]?.trim().toUpperCase(),
+                        rg: rgImport,
+                        unidadeServe: c[4]?.trim() || "N/I",
+                        telefone: c[5]?.trim() || "N/I",
+                        email: c[6]?.trim() || "N/I",
+                        unidade: c[7]?.trim() || "N/I",
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    contador++;
+                }
+            }
+        }
+        alert(contador + " militares sincronizados!");
+        document.getElementById("textoExcel").value = "";
+        carregarDados();
+    }
+
+    async function excluirRegistro(id) {
+        if(confirm("Deseja excluir este registro?")) {
+            await db.collection("agendamentos_odonto").doc(id).delete();
+            carregarDados();
+        }
+    }
+
+    async function resetarTudo() {
+        if(confirm("🚨 ATENÇÃO: Deseja apagar todos os dados da Odonto?")) {
+            const snap = await db.collection("agendamentos_odonto").get();
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("Banco de dados resetado.");
+            carregarDados();
+        }
+    }
+
+    function filtrar() {
+        const busca = document.getElementById("lupa").value.toUpperCase();
+        const rows = document.querySelectorAll("#corpoTabela tr");
+        rows.forEach(r => r.style.display = r.innerText.toUpperCase().includes(busca) ? "" : "none");
+    }
+
+    function baixarPlanilha() {
+        const wb = XLSX.utils.table_to_book(document.getElementById("tabelaADM"));
+        XLSX.writeFile(wb, "Relatorio_Odonto_2026.xlsx");
+    }
+
     window.onload = carregarDados;
 </script>
 </body>
