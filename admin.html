@@ -151,6 +151,7 @@
 
         .btn-refresh { background: var(--cba-blue); }
         .btn-excel { background: var(--success); }
+        .btn-del-multi { background: var(--cba-red); }
 
         .table-container { 
             background: white; 
@@ -227,6 +228,7 @@
         </div>
     </div>
     <div style="display: flex; gap: 10px;">
+        <button class="btn btn-del-multi" onclick="excluirSelecionados()">🗑️ Excluir Selecionados</button>
         <button class="btn btn-excel" onclick="baixarPlanilha()">📥 Exportar Excel</button>
     </div>
 </header>
@@ -251,6 +253,7 @@
     <table id="tabelaADM">
         <thead>
             <tr>
+                <th><input type="checkbox" id="checkTodos" onclick="marcarTodos(this)"></th>
                 <th>Data</th>
                 <th>Posto</th>
                 <th>Nome</th>
@@ -264,7 +267,7 @@
             </tr>
         </thead>
         <tbody id="corpoTabela">
-            <tr><td colspan="10" style="text-align:center; padding:40px;">Sincronizando registros...</td></tr>
+            <tr><td colspan="11" style="text-align:center; padding:40px;">Sincronizando registros...</td></tr>
         </tbody>
     </table>
 </div>
@@ -291,7 +294,7 @@
 
     async function carregarDados() {
         const corpo = document.getElementById("corpoTabela");
-        corpo.innerHTML = '<tr><td colspan="10" style="text-align:center;">Carregando...</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="11" style="text-align:center;">Carregando...</td></tr>';
         
         try {
             const snap = await db.collection("agendamentos_odonto").get();
@@ -303,14 +306,12 @@
                 const d = doc.data();
                 lista.push({id: doc.id, ...d});
                 
-                // --- FILTRO DE UNIDADES ---
                 let unRaw = d.unidadeOrigem || d.unidadeServe || d.unidade || "NÃO INFORMADO";
                 let un = unRaw.trim().toUpperCase();
                 if (un && isNaN(un) && un.length > 3) {
                     unidadesMap[un] = (unidadesMap[un] || 0) + 1;
                 }
 
-                // --- FILTRO DE POLOS (MUDANÇA AQUI: LÊ TODAS AS VARIANTES) ---
                 let poloRaw = d.unidadeDestino || d.localAtendimento || d.poloAtendimento || "NÃO INFORMADO";
                 let polo = poloRaw.trim().toUpperCase();
                 polosMap[polo] = (polosMap[polo] || 0) + 1;
@@ -322,6 +323,7 @@
             lista.forEach(d => {
                 const turnoDisplay = d.turno === "LIVRE DEMANDA" ? `<span class="badge-turno livre">Livre Demanda</span>` : (d.turno || '-');
                 html += `<tr>
+                    <td><input type="checkbox" class="checkItem" value="${d.id}"></td>
                     <td><b>${d.data || '-'}</b></td>
                     <td>${d.posto || '-'}</td>
                     <td>${d.nome || '-'}</td>
@@ -335,7 +337,7 @@
                 </tr>`;
             });
 
-            corpo.innerHTML = html || '<tr><td colspan="10" style="text-align:center;">Sem registros.</td></tr>';
+            corpo.innerHTML = html || '<tr><td colspan="11" style="text-align:center;">Sem registros.</td></tr>';
             document.getElementById("totalGeral").innerText = lista.length;
 
             renderCards(unidadesMap, "gridUnidades", "--cba-blue");
@@ -343,7 +345,31 @@
 
         } catch (e) { 
             console.error("Erro ao carregar dados:", e); 
-            corpo.innerHTML = '<tr><td colspan="10" style="text-align:center; color:red;">Erro na conexão.</td></tr>';
+            corpo.innerHTML = '<tr><td colspan="11" style="text-align:center; color:red;">Erro na conexão.</td></tr>';
+        }
+    }
+
+    // FUNÇÕES PARA SELEÇÃO MÚLTIPLA
+    function marcarTodos(source) {
+        const checkboxes = document.querySelectorAll('.checkItem');
+        for(let c of checkboxes) c.checked = source.checked;
+    }
+
+    async function excluirSelecionados() {
+        const selecionados = document.querySelectorAll('.checkItem:checked');
+        if (selecionados.length === 0) return alert("Selecione pelo menos um registro!");
+        
+        if (confirm(`Deseja excluir permanentemente os ${selecionados.length} agendamentos selecionados?`)) {
+            const batch = db.batch();
+            selecionados.forEach(cb => {
+                const ref = db.collection("agendamentos_odonto").doc(cb.value);
+                batch.delete(ref);
+            });
+            
+            await batch.commit();
+            alert("Exclusão concluída com sucesso!");
+            carregarDados();
+            document.getElementById("checkTodos").checked = false;
         }
     }
 
