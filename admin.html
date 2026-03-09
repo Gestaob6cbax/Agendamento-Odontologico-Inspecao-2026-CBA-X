@@ -304,16 +304,22 @@
                 const d = doc.data();
                 lista.push({id: doc.id, ...d});
                 
-                // Alteração: Lógica de soma aplicada para evitar duplicar cards de quartel
+              // Alteração: Lógica de soma com FILTRO para ignorar RGs e agrupar quartéis
                 let unRaw = d.unidadeOrigem || d.unidadeServe || d.unidade || "NÃO INFORMADO";
                 let un = unRaw.trim().toUpperCase();
-                unidadesMap[un] = (unidadesMap[un] || 0) + 1;
+                
+                // FILTRO: Só cria o card se NÃO for um número e tiver mais de 3 caracteres
+                // Isso impede que números de RG (como na sua foto) gerem cards brancos
+                if (un && isNaN(un) && un.length > 3) {
+                    unidadesMap[un] = (unidadesMap[un] || 0) + 1;
+                } else if (un !== "NÃO INFORMADO") {
+                    // Agrupa erros de preenchimento ou RGs em um único card de controle
+                    unidadesMap["DADOS A CONFERIR"] = (unidadesMap["DADOS A CONFERIR"] || 0) + 1;
+                }
 
                 let poloRaw = d.unidadeDestino || d.poloAtendimento || "NÃO INFORMADO";
                 let polo = poloRaw.trim().toUpperCase();
                 polosMap[polo] = (polosMap[polo] || 0) + 1;
-            });
-
             lista.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
             let html = "";
