@@ -119,9 +119,12 @@
             <option>CBA X</option><option>CER X</option>
             <option>1º GMAR (Botafogo)</option><option>2º GMAR (Barra da Tijuca)</option>
             <option>3º GMAR (Copacabana)</option><option>4º GMAR (Itaipu)</option>
-            <option>DBM 1/M (Paquetá)</option><option>DBM 2/M (Piscinão deRamos)</option>
-            <option>DBM 3/M (Recreio)</option><option>DBM 4/M (Barra de Guaratiba)</option>
-            <option>DBM 5/M (Sepetiba)</option><option>DBM 6/M (Itaipu)</option>
+            <option>DBM 1/M (Paquetá)</option>
+            <option>DBM 2/M (Piscinão de Ramos)</option>
+            <option>DBM 3/M (Recreio)</option>
+            <option>DBM 4/M (Barra de Guaratiba)</option>
+            <option>DBM 5/M (Sepetiba)</option>
+            <option>DBM 6/M (Itaipu)</option>
         </select>
 
         <label>Posto/Graduação:</label>
@@ -134,7 +137,7 @@
         </select>
 
         <label>Nome Completo:</label>
-        <input type="text" id="nome" placeholder="NOME COMPLETO">
+        <input type="text" id="nome" placeholder="NOME COMPLETO" oninput="this.value = this.value.toUpperCase()">
 
         <label>RG Militar:</label>
         <input type="number" id="rg" placeholder="Somente números">
@@ -185,6 +188,7 @@
         appId: "1:545212689993:web:b4b85a03bb2dcac9739998"
     };
 
+    // Inicialização do Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -248,7 +252,7 @@
         let horario = document.getElementById("horario").value;
 
         if(!unidade||!data||!horario||!rg){
-            alert("Preencha Unidade, Data, Horário e RG.");
+            alert("Preencha Unidade de Atendimento, Data, Horário e RG.");
             return;
         }
 
@@ -272,7 +276,7 @@
                 .get();
 
             if(!consulta.empty){
-                alert("Este horário já foi preenchido!");
+                alert("Este horário já foi preenchido por outro militar!");
                 btn.disabled = false; btn.innerText = "Confirmar Agendamento";
                 return;
             }
@@ -292,10 +296,14 @@
             mostrarConfirmacao(dados);
             gerarPDF(dados);
             btn.style.display = "none";
+            
+            // Rola a tela para a confirmação
+            window.scrollTo(0, document.body.scrollHeight);
 
         } catch (error) {
-            alert("Erro: " + error.message);
+            alert("Erro ao salvar: " + error.message);
             btn.disabled = false;
+            btn.innerText = "Confirmar Agendamento";
         }
     }
 
@@ -303,22 +311,28 @@
         let box=document.getElementById("confirmacaoBox");
         box.style.display="block";
         box.innerHTML=`
-            <h3>Agendamento Confirmado!</h3>
-            <p><strong>Local:</strong> ${d.unidade} | <strong>Data:</strong> ${d.data} às ${d.horario}</p>
-            <p style="color:red; font-size:0.8rem;">O PDF foi gerado automaticamente.</p>
+            <h3 style="margin-top:0;">Agendamento Confirmado!</h3>
+            <p><strong>Militar:</strong> ${d.posto} ${d.nome}</p>
+            <p><strong>Polo:</strong> ${d.unidade} | <strong>Data:</strong> ${d.data} às ${d.horario}</p>
+            <p style="color:red; font-size:0.8rem; font-weight:bold;">O comprovante PDF foi baixado automaticamente.</p>
         `;
     }
 
     function gerarPDF(d){
         const doc = new jsPDF();
-        doc.text("CBA X - AGENDAMENTO ODONTOLÓGICO 2026", 20, 20);
-        doc.text("---------------------------------------", 20, 30);
-        doc.text("Militar: " + d.posto + " " + d.nome, 20, 40);
-        doc.text("RG: " + d.rg, 20, 50);
-        doc.text("Local: " + d.unidade, 20, 60);
-        doc.text("Data: " + d.data, 20, 70);
-        doc.text("Horário: " + d.horario, 20, 80);
-        doc.save(`Comprovante_${d.rg}.pdf`);
+        doc.setFontSize(16);
+        doc.text("CBA X - COMPROVANTE DE AGENDAMENTO 2026", 15, 20);
+        doc.setFontSize(12);
+        doc.text("----------------------------------------------------------", 15, 28);
+        doc.text("Militar: " + d.posto + " " + d.nome, 15, 40);
+        doc.text("RG: " + d.rg, 15, 50);
+        doc.text("Polo de Atendimento: " + d.unidade, 15, 60);
+        doc.text("Data: " + d.data, 15, 70);
+        doc.text("Horário: " + d.horario, 15, 80);
+        doc.text("----------------------------------------------------------", 15, 90);
+        doc.setFontSize(10);
+        doc.text("Emitido em: " + new Date().toLocaleString(), 15, 100);
+        doc.save(`Agendamento_Odonto_${d.rg}.pdf`);
     }
 </script>
 </body>
