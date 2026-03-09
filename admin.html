@@ -67,8 +67,8 @@
         .btn-excel { background: var(--success); }
         .btn-danger { background: var(--cba-red); }
 
-        .table-container { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; }
+        .table-container { background: white; border-radius: 15px; overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th { background: #f8f9fa; padding: 15px; text-align: left; font-size: 0.7rem; text-transform: uppercase; color: #888; border-bottom: 2px solid #eee; }
         td { padding: 12px 15px; border-bottom: 1px solid #f1f1f1; font-size: 0.85rem; color: #333; }
         .btn-del { color: var(--cba-red); background: #ffebee; border: 1px solid #ffcdd2; padding: 6px; border-radius: 8px; cursor: pointer; }
@@ -105,7 +105,7 @@
 <div id="gridPolos" class="grid-cards"></div>
 
 <div class="controls-box">
-    <input type="text" id="lupa" placeholder="🔍 Pesquise por Nome, RG ou Unidade..." onkeyup="filtrar()">
+    <input type="text" id="lupa" placeholder="🔍 Pesquise por Nome, RG, Unidade, Tel ou E-mail..." onkeyup="filtrar()">
     <button class="btn btn-refresh" onclick="carregarDados()">🔄 Atualizar Dados</button>
 </div>
 
@@ -114,23 +114,25 @@
         <thead>
             <tr>
                 <th>Data</th>
-                <th>Horário</th>
-                <th>Polo de Atendimento</th>
+                <th>Turno</th>
                 <th>Militar</th>
                 <th>RG</th>
-                <th>Unidade Origem</th>
+                <th>Origem</th>
+                <th>Telefone</th>
+                <th>E-mail</th>
+                <th>Local</th>
                 <th>Ações</th>
             </tr>
         </thead>
         <tbody id="corpoTabela">
-            <tr><td colspan="7" style="text-align:center; padding:40px;">Carregando registros...</td></tr>
+            <tr><td colspan="9" style="text-align:center; padding:40px;">Carregando registros...</td></tr>
         </tbody>
     </table>
 </div>
 
 <div class="import-box">
-    <h3 style="margin:0; color: var(--warning);">📥 Importação de Planilha Antiga</h3>
-    <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Copie do Excel: Data | Horário | Polo | Nome | Posto | RG | Unidade Origem</p>
+    <h3 style="margin:0; color: var(--warning);">📥 Importação de Planilha</h3>
+    <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Copie do Excel: Data | Turno | Militar | RG | Origem | Telefone | E-mail | Local</p>
     <textarea id="textoExcel" placeholder="Cole as linhas da planilha aqui..."></textarea>
     <button class="btn btn-refresh" style="width: 100%; justify-content: center; background: var(--success);" onclick="importarDados()">🚀 Sincronizar com Firebase</button>
 </div>
@@ -150,10 +152,9 @@
 
     async function carregarDados() {
         const corpo = document.getElementById("corpoTabela");
-        corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sincronizando...</td></tr>';
+        corpo.innerHTML = '<tr><td colspan="9" style="text-align:center;">Sincronizando...</td></tr>';
         
         try {
-            // Coleção unificada com o index.html
             const snap = await db.collection("agendamentos").get();
             let lista = [];
             let unidadesMap = {};
@@ -170,7 +171,6 @@
                 polosMap[poloAtend] = (polosMap[poloAtend] || 0) + 1;
             });
 
-            // Ordenar por data de criação (mais novos primeiro)
             lista.sort((a,b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
 
             let html = "";
@@ -178,15 +178,17 @@
                 html += `<tr>
                     <td><b>${d.data}</b></td>
                     <td>${d.horario || '-'}</td>
-                    <td style="color:var(--odonto-color); font-weight:bold">${d.unidade || '-'}</td>
                     <td>${d.posto || ''} ${d.nome || ''}</td>
                     <td><code>${d.rg || '-'}</code></td>
                     <td>${d.unidadeServe || 'N/I'}</td>
+                    <td>${d.telefone || '-'}</td>
+                    <td style="font-size: 0.75rem;">${d.email || '-'}</td>
+                    <td style="color:var(--odonto-color); font-weight:bold">${d.unidade || '-'}</td>
                     <td><button class="btn-del" onclick="excluirRegistro('${d.id}')">🗑️</button></td>
                 </tr>`;
             });
 
-            corpo.innerHTML = html || '<tr><td colspan="7" style="text-align:center;">Nenhum agendamento encontrado.</td></tr>';
+            corpo.innerHTML = html || '<tr><td colspan="9" style="text-align:center;">Nenhum agendamento encontrado.</td></tr>';
             document.getElementById("totalGeral").innerText = lista.length;
 
             renderizarCards(unidadesMap, "gridUnidades", "--cba-blue");
@@ -213,16 +215,19 @@
 
         linhas.forEach(linha => {
             const col = linha.split("\t");
-            if(col.length >= 6) {
+            // ORDEM DESEJADA: 0:Data | 1:Turno | 2:Nome | 3:RG | 4:Origem | 5:Tel | 6:Email | 7:Local
+            if(col.length >= 5) {
                 const ref = db.collection("agendamentos").doc();
                 batch.set(ref, {
                     data: col[0].trim(),
                     horario: col[1].trim(),
-                    unidade: col[2].trim(), // Polo
-                    nome: col[3].trim().toUpperCase(),
-                    posto: col[4].trim().toUpperCase(),
-                    rg: col[5].trim(),
-                    unidadeServe: col[6] ? col[6].trim() : "N/I",
+                    nome: col[2].trim().toUpperCase(),
+                    posto: "", // Se o nome já incluir o posto na planilha
+                    rg: col[3].trim(),
+                    unidadeServe: col[4] ? col[4].trim() : "N/I",
+                    telefone: col[5] ? col[5].trim() : "-",
+                    email: col[6] ? col[6].trim().toLowerCase() : "-",
+                    unidade: col[7] ? col[7].trim() : "Não informado",
                     criadoEm: new Date()
                 });
                 cont++;
@@ -231,11 +236,11 @@
 
         if(cont > 0) {
             await batch.commit();
-            alert(cont + " registros da planilha foram importados!");
+            alert(cont + " registros foram importados!");
             document.getElementById("textoExcel").value = "";
             carregarDados();
         } else {
-            alert("Erro no formato. Certifique-se de copiar as colunas corretamente.");
+            alert("Erro no formato. Verifique as colunas.");
         }
     }
 
@@ -247,7 +252,7 @@
     }
 
     async function resetarTudo() {
-        if(confirm("🚨 AVISO: Isso apagará TODOS os dados do Firebase. Confirma?")) {
+        if(confirm("🚨 AVISO: Isso apagará TUDO. Confirma?")) {
             const snap = await db.collection("agendamentos").get();
             const batch = db.batch();
             snap.forEach(doc => batch.delete(doc.ref));
@@ -259,7 +264,7 @@
     function baixarPlanilha() {
         const table = document.getElementById("tabelaADM");
         const wb = XLSX.utils.table_to_book(table);
-        XLSX.writeFile(wb, "Relatorio_Consolidado_Odonto_2026.xlsx");
+        XLSX.writeFile(wb, "Relatorio_Odonto_CBAX_2026.xlsx");
     }
 
     function filtrar() {
