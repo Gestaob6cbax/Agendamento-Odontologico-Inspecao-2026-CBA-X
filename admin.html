@@ -30,7 +30,6 @@
         .header-info h1 { margin: 0; color: var(--cba-blue); font-size: 1.6rem; }
         .header-info p { margin: 5px 0 0; color: #666; font-weight: bold; font-size: 0.9rem; }
 
-        /* 1ª LINHA: TOTAL GERAL */
         .card-destaque-geral {
             background: var(--odonto-color); color: white; padding: 20px; border-radius: 15px;
             text-align: center; box-shadow: 0 4px 15px rgba(0, 150, 136, 0.2); margin-bottom: 25px;
@@ -102,7 +101,7 @@
 <div class="section-title">Efetivo por Unidade de Origem (Quartel do Militar)</div>
 <div id="gridUnidades" class="grid-cards"></div>
 
-<div class="section-title">Agendamentos por Polo de Inspeção (Onde será o atendimento)</div>
+<div class="section-title">Agendamentos por Polo de Atendimento (Local da Consulta)</div>
 <div id="gridPolos" class="grid-cards"></div>
 
 <div class="controls-box">
@@ -115,7 +114,7 @@
         <thead>
             <tr>
                 <th>Data</th>
-                <th>Turno</th>
+                <th>Horário</th>
                 <th>Polo de Atendimento</th>
                 <th>Militar</th>
                 <th>RG</th>
@@ -130,19 +129,20 @@
 </div>
 
 <div class="import-box">
-    <h3 style="margin:0; color: var(--warning);">📥 Sincronização de Dados</h3>
-    <textarea id="textoExcel" placeholder="Cole aqui os dados do Excel: Data | Turno | Nome | Posto | RG | Unidade"></textarea>
-    <button class="btn btn-refresh" style="width: 100%; justify-content: center; background: var(--success);" onclick="importarDados()">🚀 Importar para o Firebase</button>
+    <h3 style="margin:0; color: var(--warning);">📥 Importação de Planilha Antiga</h3>
+    <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Copie do Excel: Data | Horário | Polo | Nome | Posto | RG | Unidade Origem</p>
+    <textarea id="textoExcel" placeholder="Cole as linhas da planilha aqui..."></textarea>
+    <button class="btn btn-refresh" style="width: 100%; justify-content: center; background: var(--success);" onclick="importarDados()">🚀 Sincronizar com Firebase</button>
 </div>
 
 <script>
     const firebaseConfig = {
-        apiKey: "AIzaSyBkq2D8JFuxzPTI2z_Iirg3rYfSFfPJRXY",
+        apiKey: "AIzaSyD3Z8mJPvGrRzwpYLymAXYcRQat2ccUqVM",
         authDomain: "agendamento-odonto-cbax.firebaseapp.com",
         projectId: "agendamento-odonto-cbax",
         storageBucket: "agendamento-odonto-cbax.firebasestorage.app",
-        messagingSenderId: "1011281662526",
-        appId: "1:1011281662526:web:1028e8a8d140684e98376f"
+        messagingSenderId: "545212689993",
+        appId: "1:545212689993:web:b4b85a03bb2dcac9739998"
     };
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -153,7 +153,8 @@
         corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sincronizando...</td></tr>';
         
         try {
-            const snap = await db.collection("agendamentos_odonto").get();
+            // Coleção unificada com o index.html
+            const snap = await db.collection("agendamentos").get();
             let lista = [];
             let unidadesMap = {};
             let polosMap = {};
@@ -162,66 +163,92 @@
                 const d = doc.data();
                 lista.push({id: doc.id, ...d});
                 
-                // Mapa de Origem (Quartel)
-                let un = d.unidadeServe || d.unidade || "N/I";
-                unidadesMap[un] = (unidadesMap[un] || 0) + 1;
+                let unOrigem = d.unidadeServe || "N/I";
+                unidadesMap[unOrigem] = (unidadesMap[unOrigem] || 0) + 1;
 
-                // Mapa de Destino (Polo)
-                let polo = d.poloAtendimento || "Polo não informado";
-                polosMap[polo] = (polosMap[polo] || 0) + 1;
+                let poloAtend = d.unidade || "Não informado";
+                polosMap[poloAtend] = (polosMap[poloAtend] || 0) + 1;
             });
 
-            lista.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+            // Ordenar por data de criação (mais novos primeiro)
+            lista.sort((a,b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
 
             let html = "";
             lista.forEach(d => {
-                const dataBR = d.data ? d.data.split('-').reverse().join('/') : '-';
                 html += `<tr>
-                    <td><b>${dataBR}</b></td>
-                    <td>${d.turno}</td>
-                    <td style="color:var(--odonto-color); font-weight:bold">${d.poloAtendimento || '-'}</td>
-                    <td>${d.posto} ${d.nome}</td>
-                    <td><code>${d.rg}</code></td>
-                    <td>${d.unidadeServe || d.unidade || 'N/I'}</td>
+                    <td><b>${d.data}</b></td>
+                    <td>${d.horario || '-'}</td>
+                    <td style="color:var(--odonto-color); font-weight:bold">${d.unidade || '-'}</td>
+                    <td>${d.posto || ''} ${d.nome || ''}</td>
+                    <td><code>${d.rg || '-'}</code></td>
+                    <td>${d.unidadeServe || 'N/I'}</td>
                     <td><button class="btn-del" onclick="excluirRegistro('${d.id}')">🗑️</button></td>
                 </tr>`;
             });
 
-            corpo.innerHTML = html || '<tr><td colspan="7" style="text-align:center;">Sem dados.</td></tr>';
-            
-            // Atualiza Card Total
+            corpo.innerHTML = html || '<tr><td colspan="7" style="text-align:center;">Nenhum agendamento encontrado.</td></tr>';
             document.getElementById("totalGeral").innerText = lista.length;
 
-            // Atualiza Cards de Origem
-            let uniHtml = "";
-            Object.keys(unidadesMap).sort().forEach(un => {
-                uniHtml += `<div class="card-unidade"><h4>${un}</h4><p>${unidadesMap[un]}</p></div>`;
-            });
-            document.getElementById("gridUnidades").innerHTML = uniHtml;
-
-            // Atualiza Cards de Polos
-            let poloHtml = "";
-            Object.keys(polosMap).sort().forEach(p => {
-                poloHtml += `<div class="card-unidade" style="border-bottom-color: var(--success)">
-                                <h4 style="color:var(--success)">${p}</h4>
-                                <p style="color: var(--odonto-color)">${polosMap[p]}</p>
-                             </div>`;
-            });
-            document.getElementById("gridPolos").innerHTML = poloHtml;
+            renderizarCards(unidadesMap, "gridUnidades", "--cba-blue");
+            renderizarCards(polosMap, "gridPolos", "--success");
 
         } catch (e) { console.error(e); }
     }
 
+    function renderizarCards(mapa, containerId, corVar) {
+        let html = "";
+        Object.keys(mapa).sort().forEach(key => {
+            html += `<div class="card-unidade" style="border-bottom-color: var(${corVar})"><h4>${key}</h4><p>${mapa[key]}</p></div>`;
+        });
+        document.getElementById(containerId).innerHTML = html;
+    }
+
+    async function importarDados() {
+        const texto = document.getElementById("textoExcel").value.trim();
+        if(!texto) return alert("Cole os dados da planilha!");
+
+        const linhas = texto.split("\n");
+        const batch = db.batch();
+        let cont = 0;
+
+        linhas.forEach(linha => {
+            const col = linha.split("\t");
+            if(col.length >= 6) {
+                const ref = db.collection("agendamentos").doc();
+                batch.set(ref, {
+                    data: col[0].trim(),
+                    horario: col[1].trim(),
+                    unidade: col[2].trim(), // Polo
+                    nome: col[3].trim().toUpperCase(),
+                    posto: col[4].trim().toUpperCase(),
+                    rg: col[5].trim(),
+                    unidadeServe: col[6] ? col[6].trim() : "N/I",
+                    criadoEm: new Date()
+                });
+                cont++;
+            }
+        });
+
+        if(cont > 0) {
+            await batch.commit();
+            alert(cont + " registros da planilha foram importados!");
+            document.getElementById("textoExcel").value = "";
+            carregarDados();
+        } else {
+            alert("Erro no formato. Certifique-se de copiar as colunas corretamente.");
+        }
+    }
+
     async function excluirRegistro(id) {
-        if(confirm("Deseja apagar este agendamento?")) {
-            await db.collection("agendamentos_odonto").doc(id).delete();
+        if(confirm("Deseja apagar este registro?")) {
+            await db.collection("agendamentos").doc(id).delete();
             carregarDados();
         }
     }
 
     async function resetarTudo() {
-        if(confirm("🚨 PERIGO: Isso apagará TODOS os agendamentos. Confirma?")) {
-            const snap = await db.collection("agendamentos_odonto").get();
+        if(confirm("🚨 AVISO: Isso apagará TODOS os dados do Firebase. Confirma?")) {
+            const snap = await db.collection("agendamentos").get();
             const batch = db.batch();
             snap.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
@@ -232,7 +259,7 @@
     function baixarPlanilha() {
         const table = document.getElementById("tabelaADM");
         const wb = XLSX.utils.table_to_book(table);
-        XLSX.writeFile(wb, "Relatorio_Odontologico_CBAX.xlsx");
+        XLSX.writeFile(wb, "Relatorio_Consolidado_Odonto_2026.xlsx");
     }
 
     function filtrar() {
