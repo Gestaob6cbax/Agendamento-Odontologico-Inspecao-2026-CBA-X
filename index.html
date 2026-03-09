@@ -188,7 +188,6 @@
         appId: "1:545212689993:web:b4b85a03bb2dcac9739998"
     };
 
-    // Inicialização do Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -196,7 +195,7 @@
         "1GMAR":["11/03/26","18/03/26","25/03/26","01/04/26","08/04/26","06/05/26","13/05/26","20/05/26","27/05/26","03/06/26","10/06/26","17/06/26","24/06/26","01/07/26","08/07/26","15/07/26","22/07/26","29/07/26"],
         "2GMAR":["10/03/26","17/03/26","24/03/26","31/03/26","28/04/26","05/05/26","12/05/26","19/05/26","26/05/26","02/06/26","09/06/26","16/06/26","23/06/26","30/06/26","07/07/26","14/07/26","21/07/26","28/07/26"],
         "3GMAR":["10/03/26","17/03/26","24/03/26","31/03/26","07/04/26","14/04/26","28/04/26","05/05/26","12/05/26","19/05/26","26/05/26","02/06/26","09/06/26","16/06/26","23/06/26","30/06/26","07/07/26","14/07/26","21/07/26","28/07/26"],
-        "4GMAR":["10/04/26","17/04/26","08/05/26","15/05/26","22/05/26","29/05/26","05/06/26","12/06/26","19/06/26","26/06/26","03/07/26","10/07/26","17/07/26","24/07/26","31/07/26"]
+        "4º GMAR":["10/04/26","17/04/26","08/05/26","15/05/26","22/05/26","29/05/26","05/06/26","12/06/26","19/06/26","26/06/26","03/07/26","10/07/26","17/07/26","24/07/26","31/07/26"]
     };
 
     function gerarHorarios(inicio, quantidade){
@@ -235,7 +234,7 @@
         if(unidade==="1GMAR") horarios=gerarHorarios("08:00",14);
         if(unidade==="2GMAR") horarios=[...gerarHorarios("08:00",14),...gerarHorarios("13:00",7)];
         if(unidade==="3GMAR") horarios=gerarHorarios("08:00",11);
-        if(unidade==="4GMAR") horarios=gerarHorarios("08:00",13);
+        if(unidade==="4º GMAR") horarios=gerarHorarios("08:00",13);
 
         horarios.forEach(h=>{
             let op=document.createElement("option");
@@ -247,12 +246,14 @@
     async function salvar(){
         let btn = document.getElementById("btnAcao");
         let rg = document.getElementById("rg").value.trim();
-        let unidade = document.getElementById("unidade").value;
+        let unidadeSelector = document.getElementById("unidade");
+        let unidadeValue = unidadeSelector.value;
+        let unidadeTexto = unidadeSelector.options[unidadeSelector.selectedIndex].text;
         let data = document.getElementById("data").value;
         let horario = document.getElementById("horario").value;
 
-        if(!unidade||!data||!horario||!rg){
-            alert("Preencha Unidade de Atendimento, Data, Horário e RG.");
+        if(!unidadeValue||!data||!horario||!rg){
+            alert("Preencha todos os campos obrigatórios.");
             return;
         }
 
@@ -260,7 +261,6 @@
         btn.innerText = "Verificando...";
 
         try {
-            // BLOQUEIO POR RG
             const consultaRG = await db.collection("agendamentos").where("rg","==",rg).get();
             if(!consultaRG.empty){
                 alert("Já existe um agendamento para este RG.");
@@ -268,15 +268,14 @@
                 return;
             }
 
-            // BLOQUEIO DE HORÁRIO
             const consulta = await db.collection("agendamentos")
-                .where("unidade","==",unidade)
+                .where("unidade","==",unidadeTexto)
                 .where("data","==",data)
                 .where("horario","==",horario)
                 .get();
 
             if(!consulta.empty){
-                alert("Este horário já foi preenchido por outro militar!");
+                alert("Este horário já foi preenchido!");
                 btn.disabled = false; btn.innerText = "Confirmar Agendamento";
                 return;
             }
@@ -288,7 +287,8 @@
                 rg: rg,
                 telefone: document.getElementById("telefone").value,
                 email: document.getElementById("email").value,
-                unidade, data, horario,
+                unidade: unidadeTexto, 
+                data, horario,
                 criadoEm: new Date()
             };
 
@@ -296,14 +296,11 @@
             mostrarConfirmacao(dados);
             gerarPDF(dados);
             btn.style.display = "none";
-            
-            // Rola a tela para a confirmação
             window.scrollTo(0, document.body.scrollHeight);
 
         } catch (error) {
-            alert("Erro ao salvar: " + error.message);
+            alert("Erro: " + error.message);
             btn.disabled = false;
-            btn.innerText = "Confirmar Agendamento";
         }
     }
 
