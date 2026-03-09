@@ -14,6 +14,7 @@
             --odonto-main: #009688;
             --cba-blue: #0a2c6d;
             --bg-light: #f1f4f8;
+            --laranja-comprovante: #ff9800;
         }
 
         body {
@@ -27,6 +28,7 @@
             padding: 15px;
         }
 
+        /* Container do Formulário */
         .container {
             background: white;
             width: 100%;
@@ -76,7 +78,7 @@
             background-color: #fafafa;
         }
 
-        button {
+        button#btnAcao {
             width: 100%;
             background: var(--odonto-main);
             color: white;
@@ -90,21 +92,83 @@
             text-transform: uppercase;
         }
 
-        .confirmacao {
-            margin: 20px 15px;
-            padding: 20px;
-            border-radius: 10px;
-            display: none;
+        /* --- ESTILO DO COMPROVANTE (PÁGINA À PARTE) --- */
+        #areaComprovante {
+            display: none; /* Inicia escondido */
+            width: 100%;
+            max-width: 450px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .comprovante-card {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
             text-align: center;
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-top: 15px solid var(--laranja-comprovante);
+        }
+
+        .comprovante-card img { width: 100px; margin-bottom: 10px; }
+        
+        .titulo-confirmado { color: var(--cba-blue); font-weight: 900; font-size: 1.4rem; margin-bottom: 5px; text-transform: uppercase; }
+        .subtitulo-secao { color: #333; font-size: 1.1rem; margin-bottom: 25px; }
+
+        .caixa-dados {
+            border: 2px dashed var(--laranja-comprovante);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #fffaf2;
+        }
+
+        .nome-militar { color: var(--cba-blue); font-weight: bold; font-size: 1.3rem; margin-bottom: 20px; display: block; text-transform: uppercase; }
+        
+        .info-linha { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            font-size: 1rem; 
+            margin-bottom: 12px; 
+            text-align: left;
+            color: #333;
+        }
+
+        .btn-pdf {
+            background: #555;
+            color: white;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-transform: uppercase;
+        }
+
+        .link-voltar { color: var(--cba-blue); text-decoration: underline; cursor: pointer; display: block; margin-top: 20px; font-weight: bold; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media print {
+            body { background: white; }
+            .container, .btn-pdf, .link-voltar { display: none !important; }
+            #areaComprovante { display: block !important; margin: 0; max-width: 100%; }
+            .comprovante-card { box-shadow: none; border: 1px solid #eee; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="containerForm">
     <header>
         <img src="logo.png" alt="Logo CBA X">
         <h1>Agendamento Odontológico</h1>
@@ -172,8 +236,33 @@
 
         <button onclick="salvar()" id="btnAcao">Confirmar Agendamento</button>
     </div>
+</div>
 
-    <div id="confirmacaoBox" class="confirmacao"></div>
+<div id="areaComprovante" class="comprovante-wrapper">
+    <div class="comprovante-card">
+        <img src="logo.png" alt="CBA X">
+        <h2 class="titulo-confirmado">AGENDAMENTO CONFIRMADO</h2>
+        <p class="subtitulo-secao">CBA X - 6ª Seção</p>
+
+        <div class="caixa-dados">
+            <span id="comp-nome" class="nome-militar"></span>
+            
+            <div class="info-linha">🚩 <b>RG:</b> <span id="comp-rg"></span></div>
+            <div class="info-linha">🚩 <b>Local da Inspeção:</b> <span id="comp-local"></span></div>
+            <div class="info-linha">🚩 <b>Data:</b> <span id="comp-data"></span></div>
+            <div class="info-linha">🚩 <b>Horário:</b> <span id="comp-horario"></span></div>
+            
+            <p style="font-size: 0.85rem; margin-top: 20px; color: #555; font-style: italic;">
+                (Apresente este comprovante no polo de atendimento)
+            </p>
+        </div>
+
+        <button class="btn-pdf" onclick="window.print()">
+            🖨️ IMPRIMIR / SALVAR PDF
+        </button>
+
+        <a class="link-voltar" onclick="window.location.reload()">Realizar outro agendamento</a>
+    </div>
 </div>
 
 <script>
@@ -214,11 +303,9 @@
         let unidade=document.getElementById("unidade").value;
         let selectData=document.getElementById("data");
         let selectHorario=document.getElementById("horario");
-
         selectData.innerHTML="<option value=''>Selecione a data</option>";
         selectHorario.innerHTML="<option value=''>Selecione a data primeiro</option>";
         if(!unidade) return;
-
         datas[unidade].forEach(d=>{
             let op=document.createElement("option");
             op.value=d; op.text=d;
@@ -231,13 +318,11 @@
         let selectHorario=document.getElementById("horario");
         selectHorario.innerHTML="<option value=''>Selecione o horário</option>";
         if(!unidade) return;
-
         let horarios=[];
         if(unidade==="1GMAR") horarios=gerarHorarios("08:00",14);
         if(unidade==="2GMAR") horarios=[...gerarHorarios("08:00",14),...gerarHorarios("13:00",7)];
         if(unidade==="3GMAR") horarios=gerarHorarios("08:00",11);
         if(unidade==="4º GMAR") horarios=gerarHorarios("08:00",13);
-
         horarios.forEach(h=>{
             let op=document.createElement("option");
             op.value=h; op.text=h;
@@ -248,13 +333,14 @@
     async function salvar(){
         let btn = document.getElementById("btnAcao");
         let rg = document.getElementById("rg").value.trim();
+        let posto = document.getElementById("posto").value;
+        let nome = document.getElementById("nome").value.toUpperCase();
         let unidadeSelector = document.getElementById("unidade");
-        let unidadeValue = unidadeSelector.value;
         let unidadeTexto = unidadeSelector.options[unidadeSelector.selectedIndex].text;
         let data = document.getElementById("data").value;
         let horario = document.getElementById("horario").value;
 
-        if(!unidadeValue||!data||!horario||!rg){
+        if(!unidadeTexto || !data || !horario || !rg || !nome || !posto){
             alert("Preencha todos os campos obrigatórios.");
             return;
         }
@@ -263,7 +349,6 @@
         btn.innerText = "Verificando...";
 
         try {
-            // AJUSTE: Busca na coleção correta agendamentos_odonto
             const consultaRG = await db.collection("agendamentos_odonto").where("rg","==",rg).get();
             if(!consultaRG.empty){
                 alert("Já existe um agendamento para este RG.");
@@ -274,7 +359,7 @@
             const consulta = await db.collection("agendamentos_odonto")
                 .where("unidadeDestino","==",unidadeTexto)
                 .where("data","==",data)
-                .where("turno","==",horario) // O ADM lê o horário no campo 'turno'
+                .where("turno","==",horario)
                 .get();
 
             if(!consulta.empty){
@@ -283,41 +368,41 @@
                 return;
             }
 
-            // AJUSTE: Nomes dos campos para bater com o Painel ADM
             let dados = {
                 unidadeOrigem: document.getElementById("unidadeServe").value,
-                posto: document.getElementById("posto").value,
-                nome: document.getElementById("nome").value.toUpperCase(),
+                posto: posto,
+                nome: nome,
                 rg: rg,
                 telefone: document.getElementById("telefone").value,
                 email: document.getElementById("email").value,
                 unidadeDestino: unidadeTexto, 
                 data: data, 
-                turno: horario, // Salvo como turno para aparecer na coluna turno do ADM
+                turno: horario,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             await db.collection("agendamentos_odonto").add(dados);
-            mostrarConfirmacao(dados);
+            
+            // --- AÇÃO DE SUCESSO: TROCA DE PÁGINA ---
+            document.getElementById("containerForm").style.display = "none";
+            
+            document.getElementById("comp-nome").innerText = dados.posto + " " + dados.nome;
+            document.getElementById("comp-rg").innerText = dados.rg;
+            document.getElementById("comp-local").innerText = dados.unidadeDestino;
+            document.getElementById("comp-data").innerText = dados.data;
+            document.getElementById("comp-horario").innerText = dados.turno;
+            
+            document.getElementById("areaComprovante").style.display = "block";
+            
+            // Gerar PDF silenciosamente
             gerarPDF(dados);
-            btn.style.display = "none";
-            window.scrollTo(0, document.body.scrollHeight);
+            
+            window.scrollTo(0, 0);
 
         } catch (error) {
             alert("Erro: " + error.message);
             btn.disabled = false;
         }
-    }
-
-    function mostrarConfirmacao(d){
-        let box=document.getElementById("confirmacaoBox");
-        box.style.display="block";
-        box.innerHTML=`
-            <h3 style="margin-top:0;">Agendamento Confirmado!</h3>
-            <p><strong>Militar:</strong> ${d.posto} ${d.nome}</p>
-            <p><strong>Local da Inspeção:</strong> ${d.unidadeDestino} | <strong>Data:</strong> ${d.data} às ${d.turno}</p>
-            <p style="color:red; font-size:0.8rem; font-weight:bold;">O comprovante PDF foi baixado automaticamente.</p>
-        `;
     }
 
     function gerarPDF(d){
