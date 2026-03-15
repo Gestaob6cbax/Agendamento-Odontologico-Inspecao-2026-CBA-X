@@ -163,7 +163,7 @@
         table { 
             width: 100%; 
             border-collapse: collapse; 
-            min-width: 1250px; 
+            min-width: 1300px; 
         }
 
         th { 
@@ -190,12 +190,25 @@
             font-weight: bold; 
             font-size: 0.7rem; 
             text-transform: uppercase; 
+            display: inline-block;
         }
 
-        .livre { 
-            background: #e0f2f1; 
-            color: #00796b; 
-            border: 1px solid #b2dfdb; 
+        .manha { 
+            background: #e3f2fd; 
+            color: #1565c0; 
+            border: 1px solid #bbdefb; 
+        }
+
+        .tarde { 
+            background: #fff3e0; 
+            color: #ef6c00; 
+            border: 1px solid #ffe0b2; 
+        }
+
+        .sem-turno { 
+            background: #eceff1; 
+            color: #455a64; 
+            border: 1px solid #cfd8dc; 
         }
 
         .btn-del { 
@@ -255,7 +268,7 @@
 <div id="gridPolos" class="grid-cards"></div>
 
 <div class="controls-box">
-    <input type="text" id="lupa" placeholder="🔍 Pesquise por Nome, RG, Unidade, Local ou data de agendamento..." onkeyup="filtrar()">
+    <input type="text" id="lupa" placeholder="🔍 Pesquise por Nome, RG, Unidade, Local, Turno ou data de agendamento..." onkeyup="filtrar()">
     <button class="btn btn-refresh" onclick="carregarDados()">🔄 Atualizar Dados</button>
 </div>
 
@@ -303,6 +316,24 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    function montarBadgeTurno(turno) {
+        const valor = (turno || "").toUpperCase().trim();
+
+        if (valor === "MANHÃ" || valor === "MANHA") {
+            return `<span class="badge-turno manha">MANHÃ</span>`;
+        }
+
+        if (valor === "TARDE") {
+            return `<span class="badge-turno tarde">TARDE</span>`;
+        }
+
+        if (valor) {
+            return `<span class="badge-turno sem-turno">${valor}</span>`;
+        }
+
+        return `<span class="badge-turno sem-turno">-</span>`;
+    }
+
     async function carregarDados() {
         const corpo = document.getElementById("corpoTabela");
         corpo.innerHTML = '<tr><td colspan="12" style="text-align:center;">Carregando...</td></tr>';
@@ -337,10 +368,7 @@
 
             let html = "";
             lista.forEach(d => {
-                const turnoDisplay = d.turno === "LIVRE DEMANDA"
-                    ? `<span class="badge-turno livre">Livre Demanda</span>`
-                    : (d.turno || '-');
-
+                const turnoDisplay = montarBadgeTurno(d.turno);
                 const agendadoEm = d.dataAgendamentoTexto || "-";
 
                 html += `<tr>
